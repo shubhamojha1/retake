@@ -1,0 +1,173 @@
+# Retake provider configuration (Phase 1)
+#
+# Copy to providers.toml. Never put API keys in this file: each provider names
+# the environment variable that holds its key (api_key_env).
+#
+# Concepts
+# - A capability is a job Retake needs done: llm, tts, stt, stock, music.
+# - A provider is one way of doing it. Each provider uses an adapter (the code
+#   that speaks its API). Many services speak the OpenAI API, so one adapter
+#   covers them.
+# - A profile picks one provider per capability, plus fallbacks. Switch with
+#   RETAKE_PROFILE=dev or --profile dev.
+
+[retake]
+default_profile = "free"
+
+[storage]
+backend = "local"                 # "local" now; "s3" later, same interface
+root = "./.retake/store"
+
+[cache]
+# Assets are cached by request_hash (provider + model + normalised request).
+# Same request again = cached asset, no provider call, no quota used.
+enabled = true
+root = "./.retake/cache"
+llm_responses = true              # also cache script/scene LLM responses in dev
+
+[budget]
+# Hard stops. Phase 1 should cost nothing, so these are tripwires for when a
+# paid provider gets configured by mistake.
+max_cost_per_video_usd = 0.50
+max_cost_per_day_usd = 2.00
+
+# ---------------------------------------------------------------------------
+# Profiles
+# ---------------------------------------------------------------------------
+
+[profiles.free]
+# Cloud free tiers + local TTS. Best quality at zero cost.
+llm   = { use = "groq",          fallbacks = ["ollama"] }
+tts   = { use = "kokoro-local",  fallbacks = [] }
+stt   = { use = "groq-whisper",  fallbacks = ["whisper-local"] }
+stock = { use = "pexels",        fallbacks = ["pixabay"] }
+music = { use = "library",       fallbacks = [] }
+
+[profiles.dev]
+# Fully offline. No keys, no quota. Lower quality, slower; good for coding.
+llm   = { use = "ollama",        fallbacks = [] }
+tts   = { use = "kokoro-local",  fallbacks = [] }
+stt   = { use = "whisper-local", fallbacks = [] }
+stock = { use = "fixtures",      fallbacks = [] }
+music = { use = "library",       fallbacks = [] }
+
+[profiles.test]
+# Used by the test suite and CI. Replays recorded responses only; any call
+# that has no recording fails the test instead of reaching the network.
+llm   = { use = "recorded", fallbacks = [] }
+tts   = { use = "recorded", fallbacks = [] }
+stt   = { use = "recorded", fallbacks = [] }
+stock = { use = "recorded", fallbacks = [] }
+music = { use = "library",  fallbacks = [] }
+
+# ---------------------------------------------------------------------------
+# Providers
+# ---------------------------------------------------------------------------
+
+# --- LLM: script and scene breakdown -------------------------------------
+
+[providers.groq]
+capability = "llm"
+adapter = "openai_compatible"
+base_url = "https://api.groq.com/openai/v1"
+api_key_env = "GROQ_API_KEY"
+model = "openai/gpt-oss-120b"     # check the Groq console; free models change
+structured_output = "json_schema" # scene breakdown is returned against a schema
+temperature = 0.4
+timeout_ms = 60000
+rate_limit = { requests_per_minute = 25, requests_per_day = 900 }  # stay under the free tier
+
+[providers.ollama]
+capability = "llm"
+adapter = "openai_compatible"
+base_url = "http://localhost:11434/v1"
+model = "qwen2.5:7b-instruct"      # any local instruct model that follows JSON well
+structured_output = "json_object" # weaker than json_schema; Retake re-validates and retries
+temperature = 0.4
+timeout_ms = 180000
+
+# --- TTS: voice-over -----------------------------------------------------
+
+[providers.kokoro-local]
+capability = "tts"
+# Run Kokoro behind an OpenAI-compatible speech endpoint (e.g. Kokoro-FastAPI)
+# so the same adapter works for OpenAI TTS later.
+adapter = "openai_compatible_speech"
+base_url = "http://localhost:8880/v1"
+model = "kokoro"
+voice = "af_heart"
+speed = 1.0
+format = "wav"
+sample_rate = 24000
+timeout_ms = 120000
+
+# Paid, for later. Uncomment and switch profiles.free.tts to "openai-tts".
+# [providers.openai-tts]
+# capability = "tts"
+# adapter = "openai_compatible_speech"
+# base_url = "https://api.openai.com/v1"
+# api_key_env = "OPENAI_API_KEY"
+# model = "gpt-4o-mini-tts"
+# voice = "alloy"
+
+# --- STT: word timings for captions ---------------------------------------
+
+[providers.groq-whisper]
+capability = "stt"
+adapter = "openai_compatible_transcription"
+base_url = "https://api.groq.com/openai/v1"
+api_key_env = "GROQ_API_KEY"
+model = "whisper-large-v3-turbo"
+timestamp_granularity = "word"
+rate_limit = { requests_per_minute = 15, requests_per_day = 1800 }
+
+[providers.whisper-local]
+capability = "stt"
+# A local OpenAI-compatible transcription server (e.g. speaches / faster-whisper),
+# or whisper.cpp's server.
+adapter = "openai_compatible_transcription"
+base_url = "http://localhost:8000/v1"
+model = "Systran/faster-whisper-small"
+timestamp_granularity = "word"
+
+# --- Stock visuals --------------------------------------------------------
+
+[providers.pexels]
+capability = "stock"
+adapter = "pexels"
+api_key_env = "PEXELS_API_KEY"
+media = ["video", "photo"]        # prefer video, fall back to photo per scene
+orientation = "portrait"
+min_width = 1080
+results_per_query = 5             # Retake picks the best fit and keeps the rest as alternatives
+rate_limit = { requests_per_hour = 180, requests_per_month = 19000 }
+attribution = true                # store photographer credit in asset.license
+
+[providers.pixabay]
+capability = "stock"
+adapter = "pixabay"
+api_key_env = "PIXABAY_API_KEY"
+media = ["video", "photo"]
+orientation = "vertical"
+attribution = true
+
+[providers.fixtures]
+capability = "stock"
+adapter = "local_directory"        # picks files from a folder by keyword in filename
+path = "./fixtures/stock"
+
+# --- Music ----------------------------------------------------------------
+
+[providers.library]
+capability = "music"
+adapter = "local_library"
+path = "./library/music"           # CC0 tracks only if the repo is public
+manifest = "./library/music/manifest.toml"  # title, mood, bpm, licence per track
+
+# --- Test replay ----------------------------------------------------------
+
+[providers.recorded]
+capability = "any"
+adapter = "recorded"
+path = "./test/fixtures/provider_recordings"
+on_missing = "fail"                # never fall through to the network in tests

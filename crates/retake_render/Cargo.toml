@@ -1,0 +1,13 @@
+[package]
+name = "retake_render"
+version = "0.1.0"
+edition = "2021"
+description = "Retake renderer: video spec in, MP4 out."
+
+[lib]
+name = "retake_render"
+path = "src/lib.rs"
+
+[[bin]]
+name = "retake_render"
+path = "src/main.rs"

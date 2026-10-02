@@ -1,0 +1,97 @@
+{
+  "phase": 1,
+  "states": ["not_started", "active", "blocked", "passing"],
+  "rule": "Work on one feature at a time. A feature moves to passing only when its verification command succeeds. Verification commands are proposals; finalise each one before starting the feature.",
+  "features": [
+    {
+      "id": "F01-spec-validate",
+      "behavior": "Load a spec JSON, validate it against spec/video.schema.json and the semantic rules in spec/SPEC.md; return all errors with JSON paths.",
+      "verification": "cd api && mix test test/retake/spec_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F02-test-fixtures",
+      "behavior": "A fixtures/media folder with a few small CC0 images, one short video clip, a voice-over WAV and a music track, plus fixture specs that reference them with correct content hashes.",
+      "verification": "just verify-fixtures",
+      "state": "not_started"
+    },
+    {
+      "id": "F03-render-basic",
+      "behavior": "Rust CLI renders a spec with image and video scenes, cover fit, Ken Burns motion, video trim and cuts to a 1080x1920 MP4 of the right duration.",
+      "verification": "cargo test -p retake_render basic && just render fixtures/specs/minimal.json && just probe-check",
+      "state": "not_started"
+    },
+    {
+      "id": "F04-render-transitions-text",
+      "behavior": "Crossfade and fade-through-black transitions; text overlays; captions in phrase and word_highlight modes driven by word timings.",
+      "verification": "cargo test -p retake_render transitions captions",
+      "state": "not_started"
+    },
+    {
+      "id": "F05-render-audio",
+      "behavior": "Mix voice-overs with offsets, music with fades and ducking under voice, and a final loudness pass to the spec target.",
+      "verification": "cargo test -p retake_render audio",
+      "state": "not_started"
+    },
+    {
+      "id": "F06-render-deterministic",
+      "behavior": "Rendering the same spec and assets twice produces byte-identical MP4s; asset content_hash is checked before use.",
+      "verification": "cargo test -p retake_render determinism",
+      "state": "not_started"
+    },
+    {
+      "id": "F07-renderer-port",
+      "behavior": "Elixir runs the renderer as a Port, streams progress lines, and returns the output path or a structured error.",
+      "verification": "cd api && mix test test/retake/render_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F08-provider-config",
+      "behavior": "Load config/providers.toml, select a profile, resolve providers with fallbacks, read keys from env, enforce rate limits and budget caps.",
+      "verification": "cd api && mix test test/retake/providers",
+      "state": "not_started"
+    },
+    {
+      "id": "F09-storage-cache",
+      "behavior": "Retake.Storage (local disk) stores assets by content hash; the request cache returns an existing asset for a repeated request_hash without calling the provider.",
+      "verification": "cd api && mix test test/retake/storage_test.exs test/retake/cache_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F10-step-script",
+      "behavior": "LLM turns a brief into a title and scene intents (narration, visual_query, optional on-screen text) using structured output, validated and retried on bad JSON.",
+      "verification": "cd api && mix test test/retake/pipeline/script_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F11-step-stock",
+      "behavior": "For each scene, search stock (Pexels) for portrait video or photo, pick the best fit, store it with licence and attribution.",
+      "verification": "cd api && mix test test/retake/pipeline/stock_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F12-step-voice-and-timing",
+      "behavior": "TTS each scene's narration, then transcribe it to word timings; set scene durations from voice-over length plus padding.",
+      "verification": "cd api && mix test test/retake/pipeline/voice_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F13-pipeline-e2e",
+      "behavior": "Prompt in, valid spec and MP4 out. Steps per scene run in parallel; progress events are broadcast; failures report which step and scene.",
+      "verification": "cd api && mix test test/retake/pipeline_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F14-web-mvp",
+      "behavior": "Web page with a prompt box, live step-by-step progress over a Channel, a video player and a download link.",
+      "verification": "cd web && npm test && just e2e-smoke",
+      "state": "not_started"
+    },
+    {
+      "id": "F15-phase1-acceptance",
+      "behavior": "10 varied prompts each produce a watchable video with no manual fixes, using the free profile.",
+      "verification": "just acceptance  # runs the 10 prompts, then manual review checklist in docs/ACCEPTANCE.md",
+      "state": "not_started"
+    }
+  ]
+}

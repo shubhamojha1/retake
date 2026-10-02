@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://retake.dev/spec/v0/video.schema.json",
+  "title": "Retake video spec v0",
+  "description": "A complete, renderable description of one video. Rendering depends only on this document, the bytes of the assets it references, and the renderer version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["spec_version", "id", "title", "brief", "output", "assets", "scenes", "captions", "music"],
+  "properties": {
+    "spec_version": { "const": "0.1" },
+    "id": { "$ref": "#/$defs/id" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+
+    "brief": {
+      "description": "What the user asked for. Kept so the pipeline and, later, the edit agent can regenerate from intent.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prompt", "target_duration_ms", "language"],
+      "properties": {
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "target_duration_ms": { "type": "integer", "minimum": 5000, "maximum": 180000 },
+        "language": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "tone": { "type": "string", "maxLength": 200 },
+        "audience": { "type": "string", "maxLength": 200 }
+      }
+    },
+
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "fps"],
+      "properties": {
+        "width": { "const": 1080 },
+        "height": { "const": 1920 },
+        "fps": { "enum": [24, 25, 30] },
+        "background": { "$ref": "#/$defs/color" }
+      }
+    },
+
+    "assets": {
+      "description": "Every media file the video uses, keyed by asset id. Scenes and tracks reference assets by id only.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/asset" }
+    },
+
+    "scenes": {
+      "description": "Played in order. A scene starts when the previous one ends, minus any overlap from its transition_in.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 40,
+      "items": { "$ref": "#/$defs/scene" }
+    },
+
+    "captions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "style"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "style": { "$ref": "#/$defs/caption_style" }
+      }
+    },
+
+    "music": {
+      "description": "One background track for the whole video, or null for none.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["asset", "gain_db", "ducking"],
+          "properties": {
+            "asset": { "$ref": "#/$defs/id" },
+            "gain_db": { "type": "number", "minimum": -60, "maximum": 0 },
+            "fade_in_ms": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "fade_out_ms": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "ducking": {
+              "description": "Lower the music while any voice-over is playing.",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["enabled", "reduction_db"],
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "reduction_db": { "type": "number", "minimum": 0, "maximum": 40 },
+                "attack_ms": { "type": "integer", "minimum": 0, "maximum": 2000 },
+                "release_ms": { "type": "integer", "minimum": 0, "maximum": 5000 }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "loudness": {
+      "description": "Final mix target, applied after mixing voice and music.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["integrated_lufs", "true_peak_dbtp"],
+      "properties": {
+        "integrated_lufs": { "type": "number", "minimum": -30, "maximum": -9 },
+        "true_peak_dbtp": { "type": "number", "minimum": -9, "maximum": 0 }
+      }
+    }
+  },
+
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+    },
+
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "uri", "content_hash", "media", "provenance"],
+      "properties": {
+        "kind": { "enum": ["image", "video", "audio"] },
+        "uri": {
+          "description": "Where the bytes live: a storage key (store://) or a local file during development (file://).",
+          "type": "string",
+          "pattern": "^(store|file)://.+"
+        },
+        "content_hash": {
+          "description": "Hash of the asset bytes. The renderer checks it before use.",
+          "$ref": "#/$defs/sha256"
+        },
+        "media": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "duration_ms": { "type": "integer", "minimum": 1 },
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 },
+            "sample_rate": { "type": "integer", "minimum": 8000 },
+            "channels": { "type": "integer", "minimum": 1, "maximum": 2 },
+            "mime": { "type": "string" }
+          }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "license": { "$ref": "#/$defs/license" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "image" } } },
+          "then": { "properties": { "media": { "required": ["width", "height"] } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "video" } } },
+          "then": { "properties": { "media": { "required": ["width", "height", "duration_ms"] } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "audio" } } },
+          "then": { "properties": { "media": { "required": ["duration_ms", "sample_rate", "channels"] } } }
+        }
+      ]
+    },
+
+    "provenance": {
+      "description": "How the asset was obtained. request_hash is the cache key: same request, same asset, no new provider call.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source"],
+      "properties": {
+        "source": { "enum": ["generated", "stock", "library", "upload", "recording"] },
+        "capability": { "enum": ["llm", "tts", "stt", "stock", "image", "video", "music"] },
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "request": {
+          "description": "The normalised request sent to the provider (prompt, voice, query, parameters). No secrets.",
+          "type": "object"
+        },
+        "request_hash": { "$ref": "#/$defs/sha256" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "cost": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount", "currency"],
+          "properties": {
+            "amount": { "type": "number", "minimum": 0 },
+            "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+            "units": { "type": "object", "description": "Provider-reported usage, e.g. tokens, characters, seconds." }
+          }
+        }
+      }
+    },
+
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "source_url": { "type": "string", "format": "uri" },
+        "attribution": { "type": "string" }
+      }
+    },
+
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "intent", "duration_ms", "visual"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+
+        "intent": {
+          "description": "What this scene should be. Written by the LLM, editable by the user. Resolved assets below are derived from it; changing intent invalidates them.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["narration", "visual_query"],
+          "properties": {
+            "narration": { "type": "string", "maxLength": 1000 },
+            "visual_query": { "type": "string", "maxLength": 300, "description": "Stock search terms in v0; a generation prompt in later versions." },
+            "on_screen_text": { "type": "string", "maxLength": 120 }
+          }
+        },
+
+        "duration_ms": {
+          "description": "Normally the voice-over length plus padding. Must be at least the voice-over length.",
+          "type": "integer",
+          "minimum": 500,
+          "maximum": 30000
+        },
+
+        "visual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["asset", "fit"],
+          "properties": {
+            "asset": { "$ref": "#/$defs/id" },
+            "fit": { "enum": ["cover", "contain"] },
+            "trim_start_ms": { "type": "integer", "minimum": 0, "description": "Video assets only: where to start reading the clip." },
+            "motion": {
+              "description": "Slow pan/zoom for still images (Ken Burns). Scale and offsets are at scene start and end.",
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["from", "to"],
+                  "properties": {
+                    "from": { "$ref": "#/$defs/frame_transform" },
+                    "to": { "$ref": "#/$defs/frame_transform" },
+                    "easing": { "enum": ["linear", "ease_in_out"] }
+                  }
+                }
+              ]
+            }
+          }
+        },
+
+        "voiceover": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["asset", "offset_ms", "words"],
+              "properties": {
+                "asset": { "$ref": "#/$defs/id" },
+                "offset_ms": { "type": "integer", "minimum": 0, "maximum": 5000, "description": "Delay from scene start." },
+                "gain_db": { "type": "number", "minimum": -30, "maximum": 12 },
+                "words": {
+                  "description": "Word timings relative to the start of the voice-over asset. Drives captions.",
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/word" }
+                }
+              }
+            }
+          ]
+        },
+
+        "overlays": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/text_overlay" }
+        },
+
+        "transition_in": {
+          "description": "How this scene enters. Ignored on the first scene. A crossfade overlaps the previous scene by duration_ms.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "duration_ms"],
+              "properties": {
+                "kind": { "enum": ["cut", "crossfade", "fade_through_black"] },
+                "duration_ms": { "type": "integer", "minimum": 0, "maximum": 2000 }
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    "frame_transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scale", "x", "y"],
+      "properties": {
+        "scale": { "type": "number", "minimum": 1, "maximum": 2 },
+        "x": { "type": "number", "minimum": -1, "maximum": 1, "description": "Horizontal offset as a fraction of the available pan range." },
+        "y": { "type": "number", "minimum": -1, "maximum": 1 }
+      }
+    },
+
+    "word": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "start_ms", "end_ms"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "start_ms": { "type": "integer", "minimum": 0 },
+        "end_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "text_overlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "start_ms", "end_ms", "position"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "start_ms": { "type": "integer", "minimum": 0, "description": "Relative to scene start." },
+        "end_ms": { "type": "integer", "minimum": 1 },
+        "position": { "enum": ["top", "center", "bottom"] },
+        "style": { "$ref": "#/$defs/text_style" }
+      }
+    },
+
+    "text_style": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "font_family": { "type": "string" },
+        "font_weight": { "enum": [400, 500, 600, 700, 800, 900] },
+        "font_size_px": { "type": "integer", "minimum": 16, "maximum": 200 },
+        "color": { "$ref": "#/$defs/color" },
+        "stroke_color": { "$ref": "#/$defs/color" },
+        "stroke_px": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "background": { "$ref": "#/$defs/color" },
+        "uppercase": { "type": "boolean" }
+      }
+    },
+
+    "caption_style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "max_words_per_line", "max_lines", "position", "text"],
+      "properties": {
+        "mode": { "enum": ["phrase", "word_highlight"], "description": "word_highlight colours the word being spoken." },
+        "max_words_per_line": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "max_lines": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "position": { "enum": ["center", "lower_third"] },
+        "highlight_color": { "$ref": "#/$defs/color" },
+        "text": { "$ref": "#/$defs/text_style" }
+      }
+    }
+  }
+}

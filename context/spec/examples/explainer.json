@@ -1,0 +1,557 @@
+{
+  "spec_version": "0.1",
+  "id": "battery-tip",
+  "title": "Why your battery drains overnight",
+  "brief": {
+    "prompt": "A 15 second tip video about background app refresh draining phone batteries",
+    "target_duration_ms": 15000,
+    "language": "en",
+    "tone": "friendly, direct",
+    "audience": "general smartphone users"
+  },
+  "output": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "background": "#000000"
+  },
+  "assets": {
+    "img-s1": {
+      "kind": "image",
+      "uri": "store://assets/img-s1.jpg",
+      "content_hash": "sha256:6d631641aafc919805dfe4d1a469ae54bff0da0d36bc8da23a0eb6e5f68588c1",
+      "media": {
+        "width": 2400,
+        "height": 3600,
+        "mime": "image/jpeg"
+      },
+      "provenance": {
+        "source": "stock",
+        "capability": "stock",
+        "provider": "pexels",
+        "model": "photos-search-v1",
+        "request": {
+          "query": "phone battery low dark room",
+          "orientation": "portrait",
+          "rank": 0
+        },
+        "request_hash": "sha256:692005a8cfe5a90f2f4d223c53d459dac5be176e66240a57fe8230202e3cc5a6",
+        "created_at": "2026-10-02T10:15:00Z",
+        "cost": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "license": {
+        "name": "Pexels License",
+        "source_url": "https://www.pexels.com/photo/1001/",
+        "attribution": "Photo by A. Photographer on Pexels"
+      }
+    },
+    "vo-s1": {
+      "kind": "audio",
+      "uri": "store://assets/vo-s1.wav",
+      "content_hash": "sha256:8c45510d40e409dd3d276326a4eaf80d5be8a544ba2605492fcab14caa6500b8",
+      "media": {
+        "duration_ms": 4100,
+        "sample_rate": 24000,
+        "channels": 1,
+        "mime": "audio/wav"
+      },
+      "provenance": {
+        "source": "generated",
+        "capability": "tts",
+        "provider": "kokoro-local",
+        "model": "kokoro-82m",
+        "request": {
+          "text": "Your phone loses about 20 percent of its battery to apps you never open.",
+          "voice": "af_heart",
+          "speed": 1.0
+        },
+        "request_hash": "sha256:5af3ed4573d07ed4d5eab88a88f70f4ad92c55e63bf6713241bdd15c59098044",
+        "created_at": "2026-10-02T10:15:00Z",
+        "cost": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      }
+    },
+    "vid-s2": {
+      "kind": "video",
+      "uri": "store://assets/vid-s2.mp4",
+      "content_hash": "sha256:39aa27d25eeb43835d1038e649481d4b0b17c420026def828d75dc98253ffc5a",
+      "media": {
+        "width": 1080,
+        "height": 1920,
+        "duration_ms": 9000,
+        "mime": "video/mp4"
+      },
+      "provenance": {
+        "source": "stock",
+        "capability": "stock",
+        "provider": "pexels",
+        "model": "videos-search-v1",
+        "request": {
+          "query": "notifications smartphone close up",
+          "orientation": "portrait",
+          "rank": 0
+        },
+        "request_hash": "sha256:d92ed5594dd6b035336af5ec4ec9e8cec311eaa1169b0550d1590aca4c32e769",
+        "created_at": "2026-10-02T10:15:00Z",
+        "cost": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "license": {
+        "name": "Pexels License",
+        "source_url": "https://www.pexels.com/video/2002/",
+        "attribution": "Video by B. Filmmaker on Pexels"
+      }
+    },
+    "vo-s2": {
+      "kind": "audio",
+      "uri": "store://assets/vo-s2.wav",
+      "content_hash": "sha256:0fd17b3da2f0453141bba79f61b3a07de6a7fb4c33f0167f5db99a2f4bb86d54",
+      "media": {
+        "duration_ms": 4600,
+        "sample_rate": 24000,
+        "channels": 1,
+        "mime": "audio/wav"
+      },
+      "provenance": {
+        "source": "generated",
+        "capability": "tts",
+        "provider": "kokoro-local",
+        "model": "kokoro-82m",
+        "request": {
+          "text": "Background refresh keeps them awake, checking for updates every few minutes.",
+          "voice": "af_heart",
+          "speed": 1.0
+        },
+        "request_hash": "sha256:7c5c5b15e1a6c95469c57c0f264944a07b37e3b3e278c02d1d75f6f318444715",
+        "created_at": "2026-10-02T10:15:00Z",
+        "cost": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      }
+    },
+    "img-s3": {
+      "kind": "image",
+      "uri": "store://assets/img-s3.jpg",
+      "content_hash": "sha256:5ffb897907b28b13a4e062ae39e8eca5b5c2266b44ced7fce620bb74a6a50fab",
+      "media": {
+        "width": 2400,
+        "height": 3600,
+        "mime": "image/jpeg"
+      },
+      "provenance": {
+        "source": "stock",
+        "capability": "stock",
+        "provider": "pexels",
+        "model": "photos-search-v1",
+        "request": {
+          "query": "person relaxing evening phone",
+          "orientation": "portrait",
+          "rank": 0
+        },
+        "request_hash": "sha256:4d196fa03a39b707bcf701b3022eef059167387591b179c75b63a549b82f957c",
+        "created_at": "2026-10-02T10:15:00Z",
+        "cost": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "license": {
+        "name": "Pexels License",
+        "source_url": "https://www.pexels.com/photo/1003/",
+        "attribution": "Photo by A. Photographer on Pexels"
+      }
+    },
+    "vo-s3": {
+      "kind": "audio",
+      "uri": "store://assets/vo-s3.wav",
+      "content_hash": "sha256:5a88221aa9c78275fa9bfeaff2eb21aea7ee59c8f49d02f9cc5ac7ea33fc4af0",
+      "media": {
+        "duration_ms": 5200,
+        "sample_rate": 24000,
+        "channels": 1,
+        "mime": "audio/wav"
+      },
+      "provenance": {
+        "source": "generated",
+        "capability": "tts",
+        "provider": "kokoro-local",
+        "model": "kokoro-82m",
+        "request": {
+          "text": "Turn it off for everything except messages, and you'll feel the difference by tonight.",
+          "voice": "af_heart",
+          "speed": 1.0
+        },
+        "request_hash": "sha256:5fc111a8e8b431391186f82f4cecb1c045628013615d1e62a2314cf24f2a1531",
+        "created_at": "2026-10-02T10:15:00Z",
+        "cost": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      }
+    },
+    "music-1": {
+      "kind": "audio",
+      "uri": "file://library/music/lofi-calm-01.mp3",
+      "content_hash": "sha256:13bbbbfaaf34c58eb5865c9dd5a14f2a5f90574f2d71836d80e665fc2a534182",
+      "media": {
+        "duration_ms": 120000,
+        "sample_rate": 44100,
+        "channels": 2,
+        "mime": "audio/mpeg"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "id": "s1",
+      "intent": {
+        "narration": "Your phone loses about 20 percent of its battery to apps you never open.",
+        "visual_query": "phone battery low dark room",
+        "on_screen_text": "Your battery is lying to you"
+      },
+      "duration_ms": 4600,
+      "visual": {
+        "asset": "img-s1",
+        "fit": "cover",
+        "motion": {
+          "from": {
+            "scale": 1.0,
+            "x": 0,
+            "y": 0
+          },
+          "to": {
+            "scale": 1.1,
+            "x": 0,
+            "y": 0.15
+          },
+          "easing": "linear"
+        }
+      },
+      "voiceover": {
+        "asset": "vo-s1",
+        "offset_ms": 200,
+        "words": [
+          {
+            "text": "Your",
+            "start_ms": 0,
+            "end_ms": 272
+          },
+          {
+            "text": "phone",
+            "start_ms": 292,
+            "end_ms": 564
+          },
+          {
+            "text": "loses",
+            "start_ms": 584,
+            "end_ms": 856
+          },
+          {
+            "text": "about",
+            "start_ms": 876,
+            "end_ms": 1148
+          },
+          {
+            "text": "20",
+            "start_ms": 1168,
+            "end_ms": 1440
+          },
+          {
+            "text": "percent",
+            "start_ms": 1460,
+            "end_ms": 1732
+          },
+          {
+            "text": "of",
+            "start_ms": 1752,
+            "end_ms": 2024
+          },
+          {
+            "text": "its",
+            "start_ms": 2044,
+            "end_ms": 2316
+          },
+          {
+            "text": "battery",
+            "start_ms": 2336,
+            "end_ms": 2608
+          },
+          {
+            "text": "to",
+            "start_ms": 2628,
+            "end_ms": 2900
+          },
+          {
+            "text": "apps",
+            "start_ms": 2920,
+            "end_ms": 3192
+          },
+          {
+            "text": "you",
+            "start_ms": 3212,
+            "end_ms": 3484
+          },
+          {
+            "text": "never",
+            "start_ms": 3504,
+            "end_ms": 3776
+          },
+          {
+            "text": "open.",
+            "start_ms": 3796,
+            "end_ms": 4068
+          }
+        ]
+      },
+      "transition_in": null,
+      "overlays": [
+        {
+          "text": "Your battery is lying to you",
+          "start_ms": 0,
+          "end_ms": 2000,
+          "position": "top",
+          "style": {
+            "font_family": "Inter",
+            "font_weight": 900,
+            "font_size_px": 72,
+            "color": "#FFFFFF",
+            "background": "#000000AA",
+            "uppercase": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "intent": {
+        "narration": "Background refresh keeps them awake, checking for updates every few minutes.",
+        "visual_query": "notifications smartphone close up"
+      },
+      "duration_ms": 5100,
+      "visual": {
+        "asset": "vid-s2",
+        "fit": "cover",
+        "trim_start_ms": 1200
+      },
+      "voiceover": {
+        "asset": "vo-s2",
+        "offset_ms": 200,
+        "words": [
+          {
+            "text": "Background",
+            "start_ms": 0,
+            "end_ms": 398
+          },
+          {
+            "text": "refresh",
+            "start_ms": 418,
+            "end_ms": 816
+          },
+          {
+            "text": "keeps",
+            "start_ms": 836,
+            "end_ms": 1234
+          },
+          {
+            "text": "them",
+            "start_ms": 1254,
+            "end_ms": 1652
+          },
+          {
+            "text": "awake,",
+            "start_ms": 1672,
+            "end_ms": 2070
+          },
+          {
+            "text": "checking",
+            "start_ms": 2090,
+            "end_ms": 2488
+          },
+          {
+            "text": "for",
+            "start_ms": 2508,
+            "end_ms": 2906
+          },
+          {
+            "text": "updates",
+            "start_ms": 2926,
+            "end_ms": 3324
+          },
+          {
+            "text": "every",
+            "start_ms": 3344,
+            "end_ms": 3742
+          },
+          {
+            "text": "few",
+            "start_ms": 3762,
+            "end_ms": 4160
+          },
+          {
+            "text": "minutes.",
+            "start_ms": 4180,
+            "end_ms": 4578
+          }
+        ]
+      },
+      "transition_in": {
+        "kind": "crossfade",
+        "duration_ms": 300
+      }
+    },
+    {
+      "id": "s3",
+      "intent": {
+        "narration": "Turn it off for everything except messages, and you'll feel the difference by tonight.",
+        "visual_query": "person relaxing evening phone"
+      },
+      "duration_ms": 5700,
+      "visual": {
+        "asset": "img-s3",
+        "fit": "cover",
+        "motion": {
+          "from": {
+            "scale": 1.0,
+            "x": 0,
+            "y": 0
+          },
+          "to": {
+            "scale": 1.1,
+            "x": 0,
+            "y": 0.15
+          },
+          "easing": "linear"
+        }
+      },
+      "voiceover": {
+        "asset": "vo-s3",
+        "offset_ms": 200,
+        "words": [
+          {
+            "text": "Turn",
+            "start_ms": 0,
+            "end_ms": 351
+          },
+          {
+            "text": "it",
+            "start_ms": 371,
+            "end_ms": 722
+          },
+          {
+            "text": "off",
+            "start_ms": 742,
+            "end_ms": 1093
+          },
+          {
+            "text": "for",
+            "start_ms": 1113,
+            "end_ms": 1464
+          },
+          {
+            "text": "everything",
+            "start_ms": 1484,
+            "end_ms": 1835
+          },
+          {
+            "text": "except",
+            "start_ms": 1855,
+            "end_ms": 2206
+          },
+          {
+            "text": "messages,",
+            "start_ms": 2226,
+            "end_ms": 2577
+          },
+          {
+            "text": "and",
+            "start_ms": 2597,
+            "end_ms": 2948
+          },
+          {
+            "text": "you'll",
+            "start_ms": 2968,
+            "end_ms": 3319
+          },
+          {
+            "text": "feel",
+            "start_ms": 3339,
+            "end_ms": 3690
+          },
+          {
+            "text": "the",
+            "start_ms": 3710,
+            "end_ms": 4061
+          },
+          {
+            "text": "difference",
+            "start_ms": 4081,
+            "end_ms": 4432
+          },
+          {
+            "text": "by",
+            "start_ms": 4452,
+            "end_ms": 4803
+          },
+          {
+            "text": "tonight.",
+            "start_ms": 4823,
+            "end_ms": 5174
+          }
+        ]
+      },
+      "transition_in": {
+        "kind": "crossfade",
+        "duration_ms": 300
+      }
+    }
+  ],
+  "captions": {
+    "enabled": true,
+    "style": {
+      "mode": "word_highlight",
+      "max_words_per_line": 3,
+      "max_lines": 2,
+      "position": "center",
+      "highlight_color": "#FFD400",
+      "text": {
+        "font_family": "Inter",
+        "font_weight": 800,
+        "font_size_px": 76,
+        "color": "#FFFFFF",
+        "stroke_color": "#000000",
+        "stroke_px": 8,
+        "uppercase": true
+      }
+    }
+  },
+  "music": {
+    "asset": "music-1",
+    "gain_db": -14,
+    "fade_in_ms": 500,
+    "fade_out_ms": 1500,
+    "ducking": {
+      "enabled": true,
+      "reduction_db": 10,
+      "attack_ms": 150,
+      "release_ms": 400
+    }
+  },
+  "loudness": {
+    "integrated_lufs": -14,
+    "true_peak_dbtp": -1
+  }
+}
