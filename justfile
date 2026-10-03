@@ -95,8 +95,7 @@ build:
 # --- quality ---------------------------------------------------------------
 
 # Run the web, Rust, and Elixir test suites, plus the boundary check self-test.
-# Force MIX_ENV=test: the nix shell exports MIX_ENV=dev, which would otherwise
-# override `mix test`'s implicit test env.
+# MIX_ENV=test is explicit so a MIX_ENV exported in your own shell can't leak in.
 test: pg-start test-boundaries
     cd web && npm test
     cargo test --workspace

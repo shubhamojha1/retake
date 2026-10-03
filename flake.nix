@@ -90,13 +90,21 @@
               # keep your shell history in iex
               export ERL_AFLAGS="-kernel shell_history enabled"
 
-              export MIX_ENV=dev
-
               # local Postgres: TCP on 127.0.0.1:5432, trust auth, data in .pg/
               export PGDATA=$PWD/.pg/data
               export PGHOST=127.0.0.1
               export PGPORT=5432
               export PGUSER=postgres
+
+              # Start the local Postgres on shell entry. No-op if already running,
+              # if the cluster doesn't exist yet (`just pg-start` creates it), or in CI.
+              if [ -z "''${CI:-}" ] && [ -d "$PGDATA" ] && ! pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
+                if pg_ctl -D "$PGDATA" -l "$PGDATA/../pg.log" -w -s start >/dev/null 2>&1; then
+                  echo "retake: postgres started on $PGHOST:$PGPORT"
+                else
+                  echo "retake: postgres failed to start, see .pg/pg.log"
+                fi
+              fi
             '';
           };
         };
