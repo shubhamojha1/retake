@@ -74,7 +74,7 @@
       "id": "F07-renderer-port",
       "behavior": "Elixir runs the renderer as a Port, streams progress lines, and returns the output path or a structured error.",
       "verification": "cd api && mix test test/retake/render_test.exs",
-      "state": "not_started"
+      "state": "passing"
     },
     {
       "id": "F08-provider-config",
@@ -90,9 +90,15 @@
     },
     {
       "id": "F10-step-script",
-      "behavior": "LLM turns a brief into a title and scene intents (narration, visual_query, optional on-screen text) using structured output, validated and retried on bad JSON.",
-      "verification": "cd api && mix test test/retake/pipeline/script_test.exs",
-      "state": "not_started"
+      "behavior": "LLM turns a brief into a title and scene intents (narration, visual_query, optional on-screen text) using structured output, validated and retried on bad JSON; invalid replies are never cached. Includes the first real adapter (openai_compatible, via Req) and the call path every pipeline step will use: Retake.Providers.Client composes provider resolution, cache lookup per provider, fallbacks, rate limits and budget.",
+      "sub_steps": [
+        "10a Providers.Client: cache lookup per provider + providers.run + store, with an adapter registry and validate option (fake adapters in tests)",
+        "10b openai_compatible LLM adapter on Req (Req.Test stubs, no network)",
+        "10c Pipeline.Script: prompt, JSON schema, parse, validate, retry with feedback",
+        "10d mix retake.script for a real run with a Groq key; just setup copies providers.example.toml"
+      ],
+      "verification": "cd api && mix test test/retake/providers test/retake/pipeline",
+      "state": "active"
     },
     {
       "id": "F11-step-stock",

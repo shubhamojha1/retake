@@ -103,6 +103,7 @@ build:
 test: pg-start test-boundaries
     cd web && npm test
     cargo test --workspace
+    cargo build -p retake_render
     cd api && MIX_ENV=test mix test
 
 # Type-check the web app, lint Rust, format-check the API, enforce boundaries, verify fixture files.

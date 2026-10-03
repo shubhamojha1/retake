@@ -20,6 +20,11 @@ if System.get_env("PHX_SERVER") do
   config :retake, RetakeWeb.Endpoint, server: true
 end
 
+# Where the renderer binary is (defaults: config.exs for release, test.exs for debug).
+if renderer_bin = System.get_env("RETAKE_RENDERER_BIN") do
+  config :retake, renderer_bin: renderer_bin
+end
+
 config :retake, RetakeWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4010"))]
 

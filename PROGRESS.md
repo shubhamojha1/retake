@@ -165,3 +165,27 @@ Left open:
 - No single-flight for identical concurrent requests (D19).
 - `[storage]`/`[cache]` roots in `providers.toml` are parsed but not yet used to
   build the storage and cache at runtime.
+
+## F07. Renderer Port (passing, 2026-10-04)
+
+`Retake.Render.run(spec, opts)` runs `retake_render` as a separate OS process
+through a Port (D4, rule 8): rewrites `store://` uris to real file paths via the
+storage in a temp copy of the spec, reads the renderer's lines (`progress n/m` to
+`:on_progress`, `done <path>`, `warning:` collected, `error:` as the message,
+other lines kept to explain a failure), and returns `{:ok, %{path, warnings}}` or
+`{:error, %{kind, message, warnings}}` with kinds `:renderer_not_found`,
+`:asset_not_found`, `:render_failed`, `:timeout`. A hung renderer is killed
+(`kill -KILL`; closing a Port does not stop the OS process) and the test checks
+it is gone. Binary path: `config :retake, :renderer_bin` (release build by
+default, debug build in `test.exs`, `RETAKE_RENDERER_BIN` overrides). `just test`
+now builds the debug renderer before the Elixir tests.
+
+Tests: 18 in `render_test.exs` (3 against the real renderer, the rest against
+shell-script stand-ins for the line protocol), written first (red), then green.
+One test-setup bug found: unquoted tmp paths with parentheses in scripts.
+Verification: `mix test test/retake/render_test.exs`; user reported all pass.
+
+Left open:
+- Warnings (D14) are returned but nothing surfaces them to users yet (F13/F14).
+- The renderer child processes are not killed explicitly on timeout (they exit
+  when their pipes close).

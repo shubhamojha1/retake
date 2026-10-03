@@ -9,7 +9,11 @@ import Config
 
 config :retake,
   ecto_repos: [Retake.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  # The renderer is a separate program run as a Port (decision D4). The release build
+  # is the default; test.exs points at the debug build; RETAKE_RENDERER_BIN overrides
+  # all of them (runtime.exs).
+  renderer_bin: Path.expand("../../target/release/retake_render", __DIR__)
 
 # Configure the endpoint
 config :retake, RetakeWeb.Endpoint,

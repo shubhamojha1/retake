@@ -20,6 +20,12 @@ config :retake, RetakeWeb.Endpoint,
   secret_key_base: "ZVimAqcCKILNneo6+JCLQpTSJ2MVwOCKCKyqWNyjodrTzwVq5+CiB2IjNlzEfgeE",
   server: false
 
+# Adapters available to the provider layer in tests (see Retake.Providers.Adapters).
+config :retake, adapters: %{"fake" => Retake.Test.FakeAdapter}
+
+# Tests run the debug renderer (`cargo build -p retake_render`, done by `just test`).
+config :retake, renderer_bin: Path.expand("../../target/debug/retake_render", __DIR__)
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
