@@ -139,3 +139,29 @@ Left open:
 - No real adapters yet (Groq, Pexels, Kokoro): F10 to F12.
 - `just setup` does not yet copy `providers.example.toml` to `providers.toml`.
 - Counters reset on restart (D16); the `provider_calls` table replaces them later.
+
+## F09. Storage and request cache (passing, 2026-10-04)
+
+`Retake.Storage` (behaviour + facade) and `Retake.Storage.Local`: assets stored
+as `store://assets/<sha256 hex>.<ext>` (D20), same bytes stored once, atomic
+writes via `tmp/` then rename, strict uri parsing and extension validation (no
+path escape), `verify/2` re-hashes against the uri, `local_path/2` gives the
+renderer a real file. `Retake.Cache` and `Retake.Cache.Entry`: `request_hash` is
+sha256 of Python-style canonical JSON of `[provider, model, request]` (D18) and
+reproduces all six hashes in `spec/examples/explainer.json`; `fetch_or_run/5`
+returns a stored result without calling the producer (JSON or stored asset),
+records provenance and cost, never caches failures, supports `force: true`, and
+treats a deleted asset or a damaged cache file as a miss (D19). `Entry.provenance/1`
+gives the provenance map of a spec asset.
+
+Tests: 39 (`storage_test.exs`, `cache_test.exs`), written first (compile-failing,
+then green). Python-computed goldens for non-ASCII, surrogate pairs and escapes.
+Verification: `mix test test/retake/storage_test.exs test/retake/cache_test.exs`;
+user reported all pass.
+
+Left open:
+- Not yet composed with `Retake.Providers.run`: F10 (first user) adds the helper
+  that looks up the cache for each resolved provider, then calls and stores.
+- No single-flight for identical concurrent requests (D19).
+- `[storage]`/`[cache]` roots in `providers.toml` are parsed but not yet used to
+  build the storage and cache at runtime.
