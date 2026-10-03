@@ -80,13 +80,13 @@
       "id": "F08-provider-config",
       "behavior": "Load config/providers.toml, select a profile, resolve providers with fallbacks, read keys from env, enforce rate limits and budget caps.",
       "verification": "cd api && mix test test/retake/providers",
-      "state": "not_started"
+      "state": "passing"
     },
     {
       "id": "F09-storage-cache",
-      "behavior": "Retake.Storage (local disk) stores assets by content hash; the request cache returns an existing asset for a repeated request_hash without calling the provider.",
+      "behavior": "Retake.Storage (behaviour + local-disk backend) stores assets by content hash as store://assets/<sha256>.<ext>, with atomic writes, strict uri parsing and hash verification. Retake.Cache computes request_hash exactly as spec/examples do (sha256 of the Python-style canonical JSON of [provider, model, request]) and returns an existing result for a repeated request without calling the producer; it stores json or binary results, records provenance and cost, and treats a missing asset or corrupt entry as a miss. force: true bypasses it. Composing it with Retake.Providers.run lands in F10, its first user.",
       "verification": "cd api && mix test test/retake/storage_test.exs test/retake/cache_test.exs",
-      "state": "not_started"
+      "state": "active"
     },
     {
       "id": "F10-step-script",

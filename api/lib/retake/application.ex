@@ -12,6 +12,7 @@ defmodule Retake.Application do
       Retake.Repo,
       {DNSCluster, query: Application.get_env(:retake, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Retake.PubSub},
+      {Retake.Providers.Usage, name: Retake.Providers.Usage},
       # Start a worker by calling: Retake.Worker.start_link(arg)
       # {Retake.Worker, arg},
       # Start to serve requests, typically the last entry

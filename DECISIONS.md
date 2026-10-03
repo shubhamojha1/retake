@@ -96,3 +96,41 @@ and fails clearly on anything it cannot proceed without (missing asset file).
 No JSON Schema crate in Rust.
 **Cost:** two parsers for one format; numeric ranges are unchecked in Rust, so a
 spec can pass Rust and fail F01. A cross-check test uses the shared examples.
+
+## D16. Provider usage counters live in memory, behind one module
+Rate-limit windows (minute, hour, day, month) and budget spend are kept by
+`Retake.Providers.Usage`, a GenServer. Reservations are atomic: the check and the
+count happen in one call, so parallel scenes cannot both slip under a limit. The
+day budget and the day/month rate windows are rolling (24 h, 30 days), not calendar.
+**Cost:** counters reset when the app restarts, so a restart forgets today's usage.
+A `provider_calls` table (also the audit log the Phase 1 criteria want) replaces
+the module's internals later; callers do not change.
+
+## D17. `toml_elixir` parses `config/providers.toml`
+Elixir has no built-in TOML parser. `toml_elixir` is maintained (TOML 1.0) but
+less widely used than `toml`, which has not been updated since 2022.
+**Cost:** a small dependency on a less popular package; swap it if it goes stale.
+
+## D18. `request_hash` is sha256 of Python-style canonical JSON of `[provider, model, request]`
+Keys sorted, separators `", "` and `": "`, non-ASCII escaped as `\uXXXX`. This is
+exactly how every `request_hash` in `spec/examples/explainer.json` was made, so
+those examples are the golden tests and existing hashes stay valid.
+**Cost:** floats must print the way Python prints them for typical values (`1.0`,
+`0.5`); exotic floats (`1e-5`) may hash differently, so requests should avoid them.
+A change to the scheme invalidates every cache entry.
+
+## D19. The request cache is one JSON file per request hash
+`<cache root>/<hex>.json` holds the provenance (provider, model, request,
+request_hash, created_at, cost) and the result (a JSON value, or a pointer to a
+stored asset). Plain files: inspectable and no migration. A missing asset or a
+corrupt entry counts as a miss and is repaired. Failures are never cached.
+**Cost:** no single-flight: two identical concurrent requests can both call the
+provider. Postgres can replace the files when workers become separate processes.
+
+## D20. Assets are stored as `store://assets/<sha256 hex>.<ext>`
+Content-addressed, so the same bytes are stored once and the uri is its own
+integrity check (`Storage.verify`). The extension is kept because some readers
+(the renderer's image decoder) pick the format from it; it is validated
+(`[a-z0-9]{1,8}`) and uris are parsed strictly, so no path can escape the root.
+Writes go to a temp file and are renamed into place.
+**Cost:** the same bytes with a different extension are two entries.

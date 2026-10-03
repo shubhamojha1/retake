@@ -114,3 +114,28 @@ Also measured by hand: sound starts at 0.300 s, first beep ends 0.700 s, peak
 
 Left open: music, ducking, loudness (F05b); crossfades still render as cuts
 (F04), so audio start times assume cuts too.
+
+## F08. Provider config (passing, 2026-10-04)
+
+`Retake.Providers` (api/lib/retake/providers*): `Config` loads and validates
+`config/providers.toml` with `toml_elixir` (every problem reported with its TOML
+path; literal `api_key` rejected, rule 7), `Provider` reads the key from the
+named environment variable at call time and never stores it, `Usage` is a
+GenServer for rate-limit windows (minute/hour/day/month, sliding) and budget
+caps with atomic reservations (D16), and `Providers.resolve/3` + `run/5` try the
+primary then the fallbacks, skipping providers with a missing key or a used-up
+rate limit, charging reported cost, and stopping when the budget is spent.
+`RETAKE_PROFILE` overrides the default profile. The shipped
+`providers.example.toml` is loaded by the tests so it cannot go stale.
+
+Tests: 58 across `providers/{config,provider,usage}_test.exs` and
+`providers_test.exs`, written first (all red), then green. Time is passed in as
+`now`, so none sleep. Verification: `mix test test/retake/providers
+test/retake/providers_test.exs`; user reported all pass.
+
+Decisions: D16 (usage counters in memory behind `Usage`), D17 (`toml_elixir`).
+
+Left open:
+- No real adapters yet (Groq, Pexels, Kokoro): F10 to F12.
+- `just setup` does not yet copy `providers.example.toml` to `providers.toml`.
+- Counters reset on restart (D16); the `provider_calls` table replaces them later.
