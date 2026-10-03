@@ -37,7 +37,9 @@ pub fn load_image(id: &str, path: &Path) -> Result<Pixmap, Error> {
     let (width, height) = rgba.dimensions();
     let mut data = rgba.into_raw();
 
-    for pixel in data.chunks_exact_mut(4) {
+    // RGBA is 4 bytes per pixel, so the buffer splits exactly: nothing is left over.
+    let (pixels, _) = data.as_chunks_mut::<4>();
+    for pixel in pixels {
         let alpha = u32::from(pixel[3]);
         if alpha != 255 {
             for channel in &mut pixel[..3] {
