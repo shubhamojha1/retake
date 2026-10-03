@@ -21,3 +21,23 @@ Checklist:
 - [x] `just check-boundaries` + self-test (rules 5, 8, 9)
 - [x] CI: check + test (written; first run on GitHub pending)
 - [x] User confirmed setup verification in WSL; F00 commit requested
+
+## F01. Spec validation (passing, 2026-10-03)
+
+`Retake.Spec.load/1` and `validate/1` in `api/lib/retake/spec.ex`: JSON Schema
+shape check (`jsv`, draft 2020-12, `spec/video.schema.json` built at compile
+time) then four semantic rules (asset ids exist, voice-over fits scene,
+transition shorter than neighbours, words in order and inside audio). Errors are
+`%{path, rule, message}` with JSON Pointer paths. Semantic rules are skipped when
+the shape check fails.
+
+Verification: `cd api && mix test test/retake/spec_test.exs` (18 tests). User
+reported "tests work"; exact output not captured here.
+
+Left open:
+- Lean scope by choice. Nine deferred rules are listed in `features.json`
+  under F01 `deferred_rules`.
+- Two Nix shell fixes found on the way: removed `MIX_ENV=dev` export; the shell
+  now starts the local Postgres on entry.
+- `just check` (format, clippy, boundaries) not yet re-run after F01.
+- Shape errors for `music` (a `oneOf`) also list a "not of type null" line; accepted noise.

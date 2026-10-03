@@ -12,9 +12,21 @@
     },
     {
       "id": "F01-spec-validate",
-      "behavior": "Load a spec JSON, validate it against spec/video.schema.json and the semantic rules in spec/SPEC.md; return all errors with JSON paths.",
+      "behavior": "Load a spec JSON, validate it against spec/video.schema.json (jsv, draft 2020-12) plus a lean set of semantic rules; return all errors as JSON Pointer paths. API: Retake.Spec.load/1 and validate/1 returning {:ok, spec} | {:error, [%{path, rule, message}]}. Lean rules: asset ids exist; voice-over fits scene (offset + audio length <= scene duration); transition shorter than both neighbouring scenes; words in order, non-overlapping, ending inside the audio. Semantic rules are skipped when the shape check fails.",
+      "deferred_rules": [
+        "wrong media kind in a slot (visual image/video; voiceover and music audio)  [SPEC.md]",
+        "first scene transition_in is null or a cut  [SPEC.md]",
+        "overlay start_ms < end_ms <= scene duration_ms  [SPEC.md]",
+        "warning: video clip too short, trim_start_ms + scene duration > clip duration (loop/freeze/reject settled in F03)  [SPEC.md]",
+        "warning: total duration within +-25% of brief.target_duration_ms  [SPEC.md]",
+        "content_hash matches bytes at uri: render time, F06  [SPEC.md]",
+        "scene ids unique  [added by us, schema cannot express it]",
+        "word start_ms < end_ms  [added by us]",
+        "trim_start_ms only on video assets  [added by us]",
+        "return warnings: {:ok, spec, warnings} once a warning rule exists"
+      ],
       "verification": "cd api && mix test test/retake/spec_test.exs",
-      "state": "active"
+      "state": "passing"
     },
     {
       "id": "F02-test-fixtures",
