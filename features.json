@@ -2,7 +2,8 @@
   "phase": 1,
   "states": ["not_started", "active", "blocked", "passing"],
   "rule": "Work on one feature at a time. A feature moves to passing only when its verification command succeeds. Verification commands are proposals; finalise each one before starting the feature.",
-  "order": "F00 > F01 > F02 > F03 > F04 > F05 > F06 > F08 > F09 > F07 > F10 > F11 > F12 > F13 > F14 > F15",
+  "order": "F00 > F01 > F02 > F03 > F05a > F08 > F09 > F07 > F10 > F11 > F12 > F13 > F14 > F04 > F05b > F06 > F15",
+  "order_note": "Reordered 2026-10-04: first goal is prompt-to-video end to end, quality second. F04 (transitions/captions), F05b (music/ducking/loudness) and F06 (determinism) move after the pipeline and web MVP.",
   "features": [
     {
       "id": "F00-setup",
@@ -32,13 +33,18 @@
       "id": "F02-test-fixtures",
       "behavior": "A fixtures/media folder with a few small CC0 images, one short video clip, a voice-over WAV and a music track, plus fixture specs that reference them with correct content hashes.",
       "verification": "just verify-fixtures",
-      "state": "not_started"
+      "state": "passing"
     },
     {
       "id": "F03-render-basic",
-      "behavior": "Rust CLI loads a spec (accepting and rejecting the same spec/examples as F01) and renders image and video scenes, cover fit, Ken Burns motion, video trim and cuts to a 1080x1920 MP4 of the right duration. Settles: video clip shorter than its scene (loop, freeze or reject).",
-      "verification": "cargo test -p retake_render spec basic && just render fixtures/specs/minimal.json && just probe-check",
-      "state": "not_started"
+      "behavior": "Rust CLI `retake_render <spec.json> [-o out.mp4]` parses a spec into strict typed structs (accepting spec/examples and fixtures, rejecting broken specs; D15) and renders image and video scenes with cover/contain fit, Ken Burns motion, video trim, a held last frame for short clips (D13) and cuts, to a 1080x1920 H.264 MP4 whose frame count follows the boundary-rounding rule in SPEC.md. Prints `progress n/total` and `done <path>` on stdout, `warning:` lines on stderr for features not built yet (D14). No audio (F05), no transitions/captions/overlays (F04).",
+      "sub_steps": [
+        "3a spec types + frame timeline (pure, unit tests)",
+        "3b compositing math: fit, motion, pixel tests (pure, unit tests)",
+        "3c media decode, encode, render loop, CLI, cuts.json fixture, probe-check"
+      ],
+      "verification": "cargo test -p retake_render && just render fixtures/specs/cuts.json && just probe-check fixtures/specs/cuts.json",
+      "state": "passing"
     },
     {
       "id": "F04-render-transitions-text",
@@ -47,8 +53,14 @@
       "state": "not_started"
     },
     {
-      "id": "F05-render-audio",
-      "behavior": "Mix voice-overs with offsets, music with fades and ducking under voice, and a final loudness pass to the spec target. Settles: loudness pass in Rust or FFmpeg loudnorm.",
+      "id": "F05a-render-voiceover",
+      "behavior": "Mix each scene's voice-over at its offset (gain_db respected) into one audio track muxed into the MP4, so a rendered video has narration. No music, ducking or loudness pass yet. Needed for the pipeline MVP.",
+      "verification": "cargo test -p retake_render voiceover && just render fixtures/specs/minimal.json && just probe-check fixtures/specs/minimal.json",
+      "state": "not_started"
+    },
+    {
+      "id": "F05b-render-music-loudness",
+      "behavior": "Music with fades and ducking under voice, and a final loudness pass to the spec target. Settles: loudness pass in Rust or FFmpeg loudnorm. After the pipeline MVP.",
       "verification": "cargo test -p retake_render audio",
       "state": "not_started"
     },

@@ -1,0 +1,365 @@
+{
+  "spec_version": "0.1",
+  "id": "fixture-multi",
+  "title": "Fixture: three scenes, music, crossfades",
+  "brief": {
+    "prompt": "A short tip video about background app refresh draining phone batteries",
+    "target_duration_ms": 13000,
+    "language": "en",
+    "tone": "friendly, direct"
+  },
+  "output": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "background": "#000000"
+  },
+  "assets": {
+    "img-gradient": {
+      "kind": "image",
+      "uri": "file://fixtures/media/gradient.jpg",
+      "content_hash": "sha256:4d9c42b69bf4a47a5c023ec89fa65d659782fbd1cf2d2070ef09c3d2254deed4",
+      "media": {
+        "width": 1350,
+        "height": 2400,
+        "mime": "image/jpeg"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    },
+    "vid-clip": {
+      "kind": "video",
+      "uri": "file://fixtures/media/clip.mp4",
+      "content_hash": "sha256:5eba320145fe22504c8a6d09b0253e4205e08f6e3ff574e0ebb84beeb349874a",
+      "media": {
+        "width": 720,
+        "height": 1280,
+        "duration_ms": 6000,
+        "mime": "video/mp4"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    },
+    "img-bars": {
+      "kind": "image",
+      "uri": "file://fixtures/media/bars.jpg",
+      "content_hash": "sha256:7034c74e7ba3d9e331bb2f674db553264da085d9354b25efd77a11fb6feca948",
+      "media": {
+        "width": 1350,
+        "height": 2400,
+        "mime": "image/jpeg"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    },
+    "vo-s1": {
+      "kind": "audio",
+      "uri": "file://fixtures/media/vo-multi-1.wav",
+      "content_hash": "sha256:3e38bdc9d59fe890b73c84551507c885cba5bbc383e4ba153f5593e53f055596",
+      "media": {
+        "duration_ms": 4500,
+        "sample_rate": 24000,
+        "channels": 1,
+        "mime": "audio/wav"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    },
+    "vo-s2": {
+      "kind": "audio",
+      "uri": "file://fixtures/media/vo-multi-2.wav",
+      "content_hash": "sha256:1dad6f1ebd29e840d42ac9450a36ccf6486405723c806249f2a74aa1eb1e63c8",
+      "media": {
+        "duration_ms": 2500,
+        "sample_rate": 24000,
+        "channels": 1,
+        "mime": "audio/wav"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    },
+    "vo-s3": {
+      "kind": "audio",
+      "uri": "file://fixtures/media/vo-multi-3.wav",
+      "content_hash": "sha256:b8d415d479c895def7a2d60db2197b427f8d7bcf379ca38cb7778d7f11c41247",
+      "media": {
+        "duration_ms": 3500,
+        "sample_rate": 24000,
+        "channels": 1,
+        "mime": "audio/wav"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    },
+    "music-1": {
+      "kind": "audio",
+      "uri": "file://fixtures/media/music.mp3",
+      "content_hash": "sha256:75a6c355692cb1c2b293d3dcbae0ae50f77a774e2856f5d8fe688ab722740c54",
+      "media": {
+        "duration_ms": 20000,
+        "sample_rate": 44100,
+        "channels": 2,
+        "mime": "audio/mpeg"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "id": "s1",
+      "intent": {
+        "narration": "Your phone loses battery to apps you never open.",
+        "visual_query": "phone battery low dark room",
+        "on_screen_text": "Your battery is lying to you"
+      },
+      "duration_ms": 5000,
+      "visual": {
+        "asset": "img-gradient",
+        "fit": "cover",
+        "motion": {
+          "from": {
+            "scale": 1.0,
+            "x": 0,
+            "y": 0
+          },
+          "to": {
+            "scale": 1.1,
+            "x": 0,
+            "y": 0.15
+          },
+          "easing": "linear"
+        }
+      },
+      "voiceover": {
+        "asset": "vo-s1",
+        "offset_ms": 200,
+        "words": [
+          {
+            "text": "Your",
+            "start_ms": 0,
+            "end_ms": 400
+          },
+          {
+            "text": "phone",
+            "start_ms": 500,
+            "end_ms": 900
+          },
+          {
+            "text": "loses",
+            "start_ms": 1000,
+            "end_ms": 1400
+          },
+          {
+            "text": "battery",
+            "start_ms": 1500,
+            "end_ms": 1900
+          },
+          {
+            "text": "to",
+            "start_ms": 2000,
+            "end_ms": 2400
+          },
+          {
+            "text": "apps",
+            "start_ms": 2500,
+            "end_ms": 2900
+          },
+          {
+            "text": "you",
+            "start_ms": 3000,
+            "end_ms": 3400
+          },
+          {
+            "text": "never",
+            "start_ms": 3500,
+            "end_ms": 3900
+          },
+          {
+            "text": "open.",
+            "start_ms": 4000,
+            "end_ms": 4400
+          }
+        ]
+      },
+      "overlays": [
+        {
+          "text": "Your battery is lying to you",
+          "start_ms": 0,
+          "end_ms": 2000,
+          "position": "top"
+        }
+      ],
+      "transition_in": null
+    },
+    {
+      "id": "s2",
+      "intent": {
+        "narration": "Background refresh keeps them awake.",
+        "visual_query": "notifications smartphone close up"
+      },
+      "duration_ms": 4500,
+      "visual": {
+        "asset": "vid-clip",
+        "fit": "cover",
+        "trim_start_ms": 1000
+      },
+      "voiceover": {
+        "asset": "vo-s2",
+        "offset_ms": 200,
+        "words": [
+          {
+            "text": "Background",
+            "start_ms": 0,
+            "end_ms": 400
+          },
+          {
+            "text": "refresh",
+            "start_ms": 500,
+            "end_ms": 900
+          },
+          {
+            "text": "keeps",
+            "start_ms": 1000,
+            "end_ms": 1400
+          },
+          {
+            "text": "them",
+            "start_ms": 1500,
+            "end_ms": 1900
+          },
+          {
+            "text": "awake.",
+            "start_ms": 2000,
+            "end_ms": 2400
+          }
+        ]
+      },
+      "transition_in": {
+        "kind": "crossfade",
+        "duration_ms": 300
+      }
+    },
+    {
+      "id": "s3",
+      "intent": {
+        "narration": "Turn it off for everything except messages.",
+        "visual_query": "person relaxing evening phone"
+      },
+      "duration_ms": 4200,
+      "visual": {
+        "asset": "img-bars",
+        "fit": "contain",
+        "motion": null
+      },
+      "voiceover": {
+        "asset": "vo-s3",
+        "offset_ms": 200,
+        "words": [
+          {
+            "text": "Turn",
+            "start_ms": 0,
+            "end_ms": 400
+          },
+          {
+            "text": "it",
+            "start_ms": 500,
+            "end_ms": 900
+          },
+          {
+            "text": "off",
+            "start_ms": 1000,
+            "end_ms": 1400
+          },
+          {
+            "text": "for",
+            "start_ms": 1500,
+            "end_ms": 1900
+          },
+          {
+            "text": "everything",
+            "start_ms": 2000,
+            "end_ms": 2400
+          },
+          {
+            "text": "except",
+            "start_ms": 2500,
+            "end_ms": 2900
+          },
+          {
+            "text": "messages.",
+            "start_ms": 3000,
+            "end_ms": 3400
+          }
+        ]
+      },
+      "transition_in": {
+        "kind": "crossfade",
+        "duration_ms": 300
+      }
+    }
+  ],
+  "captions": {
+    "enabled": true,
+    "style": {
+      "mode": "word_highlight",
+      "max_words_per_line": 3,
+      "max_lines": 2,
+      "position": "center",
+      "highlight_color": "#FFD400",
+      "text": {
+        "font_family": "Inter",
+        "font_weight": 800,
+        "font_size_px": 76,
+        "color": "#FFFFFF",
+        "stroke_color": "#000000",
+        "stroke_px": 8,
+        "uppercase": true
+      }
+    }
+  },
+  "music": {
+    "asset": "music-1",
+    "gain_db": -14,
+    "fade_in_ms": 500,
+    "fade_out_ms": 1500,
+    "ducking": {
+      "enabled": true,
+      "reduction_db": 10,
+      "attack_ms": 150,
+      "release_ms": 400
+    }
+  },
+  "loudness": {
+    "integrated_lufs": -14,
+    "true_peak_dbtp": -1
+  }
+}

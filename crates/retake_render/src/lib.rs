@@ -4,6 +4,16 @@
 //! same spec + same asset bytes + same renderer version + same pinned FFmpeg
 //! gives identical output.
 
+pub mod compose;
+pub mod encode;
+pub mod error;
+pub mod media;
+pub mod render;
+pub mod spec;
+pub mod timeline;
+
+pub use error::Error;
+
 /// Version of this renderer, taken from Cargo.toml.
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

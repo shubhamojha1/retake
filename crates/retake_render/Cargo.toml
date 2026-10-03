@@ -11,3 +11,10 @@ path = "src/lib.rs"
 [[bin]]
 name = "retake_render"
 path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+serde_json = "1"
+thiserror = "2"
+tiny-skia = "0.11"

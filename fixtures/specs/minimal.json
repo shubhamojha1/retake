@@ -1,0 +1,127 @@
+{
+  "spec_version": "0.1",
+  "id": "fixture-minimal",
+  "title": "Fixture: one image scene",
+  "brief": {
+    "prompt": "A single calm shot of the sea with one line of narration",
+    "target_duration_ms": 5000,
+    "language": "en"
+  },
+  "output": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "assets": {
+    "img-sea": {
+      "kind": "image",
+      "uri": "file://fixtures/media/sea.jpg",
+      "content_hash": "sha256:afada458053a9c9a4f6b83d8e2e420be73a863943bdc007d813853a92527c1e6",
+      "media": {
+        "width": 1350,
+        "height": 2400,
+        "mime": "image/jpeg"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    },
+    "vo-1": {
+      "kind": "audio",
+      "uri": "file://fixtures/media/vo-minimal.wav",
+      "content_hash": "sha256:1dad6f1ebd29e840d42ac9450a36ccf6486405723c806249f2a74aa1eb1e63c8",
+      "media": {
+        "duration_ms": 2500,
+        "sample_rate": 24000,
+        "channels": 1,
+        "mime": "audio/wav"
+      },
+      "provenance": {
+        "source": "library"
+      },
+      "license": {
+        "name": "CC0"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "id": "s1",
+      "intent": {
+        "narration": "The sea never stops moving.",
+        "visual_query": "calm sea waves"
+      },
+      "duration_ms": 4000,
+      "visual": {
+        "asset": "img-sea",
+        "fit": "cover",
+        "motion": {
+          "from": {
+            "scale": 1.0,
+            "x": 0,
+            "y": 0
+          },
+          "to": {
+            "scale": 1.12,
+            "x": 0.2,
+            "y": -0.1
+          },
+          "easing": "ease_in_out"
+        }
+      },
+      "voiceover": {
+        "asset": "vo-1",
+        "offset_ms": 300,
+        "words": [
+          {
+            "text": "The",
+            "start_ms": 0,
+            "end_ms": 400
+          },
+          {
+            "text": "sea",
+            "start_ms": 500,
+            "end_ms": 900
+          },
+          {
+            "text": "never",
+            "start_ms": 1000,
+            "end_ms": 1400
+          },
+          {
+            "text": "stops",
+            "start_ms": 1500,
+            "end_ms": 1900
+          },
+          {
+            "text": "moving.",
+            "start_ms": 2000,
+            "end_ms": 2400
+          }
+        ]
+      },
+      "transition_in": null
+    }
+  ],
+  "captions": {
+    "enabled": true,
+    "style": {
+      "mode": "phrase",
+      "max_words_per_line": 4,
+      "max_lines": 2,
+      "position": "lower_third",
+      "text": {
+        "font_family": "Inter",
+        "font_weight": 700,
+        "font_size_px": 64,
+        "color": "#FFFFFF",
+        "stroke_color": "#000000",
+        "stroke_px": 6
+      }
+    }
+  },
+  "music": null
+}

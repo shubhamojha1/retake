@@ -1,3 +1,8 @@
 [workspace]
 resolver = "2"
 members = ["crates/retake_render"]
+
+# Dependencies (tiny-skia, image) are far too slow unoptimised for rendering
+# 1080x1920 frames, including in `cargo test`. Our own code stays in debug.
+[profile.dev.package."*"]
+opt-level = 3

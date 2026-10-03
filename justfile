@@ -80,9 +80,13 @@ api: pg-start
 web:
     cd web && npm run dev
 
-# Render a spec to MP4 with the Rust renderer: `just render fixtures/specs/minimal.json`.
+# Render a spec to .retake/out/<id>.mp4 (release build: debug is far too slow for video).
 render spec:
-    cargo run -q -p retake_render -- {{spec}}
+    cargo run -q --release -p retake_render -- {{spec}}
+
+# Check a rendered MP4 against its spec (size, codec, frame rate, frame count).
+probe-check spec:
+    bash scripts/probe-check.sh {{spec}}
 
 # --- build -----------------------------------------------------------------
 
@@ -101,8 +105,9 @@ test: pg-start test-boundaries
     cargo test --workspace
     cd api && MIX_ENV=test mix test
 
-# Type-check the web app, lint Rust, format-check the API, enforce boundaries.
+# Type-check the web app, lint Rust, format-check the API, enforce boundaries, verify fixture files.
 check: check-boundaries
+    bash scripts/verify-fixtures.sh
     cd web && npm run typecheck
     cargo fmt --all --check
     cargo clippy --workspace --all-targets -- -D warnings
@@ -115,3 +120,14 @@ check-boundaries:
 # Self-test: the boundary check must fail on a planted violation.
 test-boundaries:
     bash scripts/test-check-boundaries.sh
+
+# --- fixtures ----------------------------------------------------------------
+
+# Check fixture hashes, media info and word timings, then load every fixture spec through Retake.Spec.
+verify-fixtures: pg-start
+    bash scripts/verify-fixtures.sh
+    cd api && MIX_ENV=test mix test test/retake/fixtures_test.exs
+
+# Regenerate fixtures/media with FFmpeg and refresh the specs. Rarely needed: the media is committed.
+gen-fixtures:
+    bash scripts/gen-fixtures.sh
