@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use tiny_skia::{Color, Pixmap};
 
+use crate::audio;
 use crate::compose;
 use crate::encode::Encoder;
 use crate::media::{self, VideoSource};
@@ -28,9 +29,6 @@ enum Source {
 /// goes away when the feature that implements it lands.
 pub fn unsupported_features(spec: &Spec) -> Vec<String> {
     let mut warnings = Vec::new();
-    if spec.scenes.iter().any(|s| s.voiceover.is_some()) {
-        warnings.push("voice-over audio is not rendered yet (F05a): the video is silent");
-    }
     if spec.music.is_some() {
         warnings.push("music is not rendered yet (F05b)");
     }
@@ -87,9 +85,12 @@ pub fn render(
     }
 
     let plan = timeline::plan(spec);
+    let voiceovers = audio::clips(spec, &plan, &options.base_dir)?;
+    let total_secs = plan.total_frames as f64 / f64::from(fps);
+
     let mut frame = Pixmap::new(width, height)
         .ok_or_else(|| Error::Spec("output size must not be zero".to_string()))?;
-    let mut encoder = Encoder::start(&options.output, width, height, fps)?;
+    let mut encoder = Encoder::start(&options.output, width, height, fps, &voiceovers, total_secs)?;
     let mut done = 0;
 
     for scene_plan in &plan.scenes {
@@ -157,11 +158,18 @@ mod tests {
     fn multi_spec_lists_every_unbuilt_feature() {
         let spec = Spec::from_json(MULTI).unwrap();
         let warnings = unsupported_features(&spec).join("\n");
-        for needle in ["voice-over", "music", "captions", "overlays", "transitions"] {
+        for needle in ["music", "captions", "overlays", "transitions"] {
             assert!(
                 warnings.contains(needle),
                 "missing {needle:?} in:\n{warnings}"
             );
         }
+    }
+
+    #[test]
+    fn voiceover_is_no_longer_reported_as_unsupported() {
+        let spec = Spec::from_json(MULTI).unwrap();
+        let warnings = unsupported_features(&spec).join("\n");
+        assert!(!warnings.contains("voice-over"), "{warnings}");
     }
 }

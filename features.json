@@ -56,7 +56,7 @@
       "id": "F05a-render-voiceover",
       "behavior": "Mix each scene's voice-over at its offset (gain_db respected) into one audio track muxed into the MP4, so a rendered video has narration. No music, ducking or loudness pass yet. Needed for the pipeline MVP.",
       "verification": "cargo test -p retake_render voiceover && just render fixtures/specs/minimal.json && just probe-check fixtures/specs/minimal.json",
-      "state": "not_started"
+      "state": "passing"
     },
     {
       "id": "F05b-render-music-loudness",

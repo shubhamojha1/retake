@@ -4,6 +4,7 @@
 //! same spec + same asset bytes + same renderer version + same pinned FFmpeg
 //! gives identical output.
 
+pub mod audio;
 pub mod compose;
 pub mod encode;
 pub mod error;

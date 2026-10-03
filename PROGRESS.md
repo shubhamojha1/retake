@@ -92,3 +92,25 @@ Left open:
   tests render in seconds.
 - Reordered plan: pipeline MVP first; F04, F05b, F06 moved after F14 (see
   `features.json` `order_note`). Next: F05a voice-over audio.
+
+## F05a. Voice-over audio (passing, 2026-10-04)
+
+Each scene's voice-over is placed at scene start + `offset_ms` (start taken from
+the scene's first frame, so sound and picture agree), resampled to 48 kHz
+stereo, levelled by `gain_db`, mixed (`amix`, `normalize=0`), padded or cut to
+the video length and muxed as AAC 128 kbps. No voice-over means no audio stream.
+Code: `audio.rs` (clip placement, filter graph), `encode.rs` (extra FFmpeg
+inputs), `render.rs` (clips resolved before the encoder starts). The "voice-over
+not rendered" warning is gone. `probe-check` now checks the audio stream.
+
+Tests (written first, seen failing): `tests/voiceover.rs` finds beep starts with
+`silencedetect` (0.3 s offset in `minimal.json`; 0.2, 5.2, 9.7 s in `multi.json`)
+and checks AAC/48 kHz/stereo/length; 6 unit tests in `audio.rs`.
+
+Verification: `cargo test -p retake_render` (all), `just probe-check` on
+`minimal.json` and `cuts.json`. User reported all pass and heard the beeps.
+Also measured by hand: sound starts at 0.300 s, first beep ends 0.700 s, peak
+-10.9 dB.
+
+Left open: music, ducking, loudness (F05b); crossfades still render as cuts
+(F04), so audio start times assume cuts too.
