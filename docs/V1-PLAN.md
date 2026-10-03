@@ -46,20 +46,26 @@ Change:
 
 ## Order
 
+Reordered 2026-10-04: the first goal is prompt-to-video end to end, even with
+poor video quality. Polish comes after the pipeline and web MVP.
+
 ```
-S0 setup (harness-init) ──► F01 spec-validate ──► F02 fixtures
-                                                    │
-        Rust track:  F03 basic ► F04 transitions+text ► F05 audio ► F06 determinism
-                                                    │
-     Elixir track:   F08 providers ► F09 storage+cache ► F07 renderer port
-                                                    │
-        Pipeline:    F10 script ► F11 stock ► F12 voice+timing ► F13 e2e (+API/jobs)
-                                                    │
-        Finish:      F14 web MVP ► F15 acceptance
+S0 setup ► F01 spec-validate ► F02 fixtures ► F03 render basic (silent, cuts)
+   ► F05a voice-over audio ► F08 providers ► F09 storage+cache ► F07 renderer port
+   ► F10 script ► F11 stock ► F12 voice+timing ► F13 e2e (+API/jobs)   <- prompt to video
+   ► F14 web MVP
+   ► then polish: F04 transitions+captions ► F05b music+loudness ► F06 determinism
+   ► F15 acceptance
 ```
 
-One feature at a time (hard rule 1). Rust track before Elixir track because
-the renderer is the riskiest piece. F03 and F13 get plan mode before code.
+One feature at a time (hard rule 1). F03 and F13 get plan mode before code.
+F05a adds only narration audio so the MVP videos speak; music, ducking and the
+loudness pass wait for F05b.
+
+**Needed before the first real end-to-end run (F13):** a Groq API key (LLM and
+speech-to-text, free tier), a Pexels API key (stock footage, free), and a local
+Kokoro text-to-speech server in Docker (`providers.example.toml`, `kokoro-local`).
+Getting these in parallel saves time later.
 
 ## Definition of done (v1)
 

@@ -34,7 +34,25 @@ operations.
 - Times inside a scene (`offset_ms`, overlays) are relative to the scene start.
   Word timings are relative to the start of the voice-over asset.
 - The renderer converts milliseconds to frames at `output.fps`, rounding to
-  the nearest frame. Frame-exact rational time is a v1 concern.
+  the nearest frame. It rounds scene *boundaries* (the start and end of each
+  scene), not durations, so rounding error never accumulates across scenes.
+  Frame-exact rational time is a v1 concern.
+
+## Visual placement
+
+- `fit: cover` scales the visual by `max(W/w, H/h)` so it fills the frame and
+  crops the overflow; `contain` scales by `min(W/w, H/h)` so it fits whole, with
+  `output.background` filling the rest. Scaling is bilinear.
+- `motion.scale` multiplies that base scale. `x` and `y` pan: the visual
+  overflows the frame by `ox = max(0, drawn_w - W) / 2` (and `oy` likewise), and
+  a positive `x` moves the view toward the right edge of the visual by
+  `x * ox` pixels (`y` positive: toward the bottom). At `x = ±1` the visual's
+  edge touches the frame edge. Time runs from `from` at the first frame of the
+  scene to `to` at its last frame, shaped by `easing`.
+- `motion` applies to video visuals too, not only still images.
+- A video visual reads the clip from `trim_start_ms`, resampled to
+  `output.fps`. If the clip ends before the scene does, the last frame is held
+  (decision D13).
 
 ```
 scene start ──┬── offset_ms ──┬── voice-over (words timed from here) ──┐
@@ -55,7 +73,7 @@ JSON Schema validates shape. The `Spec.validate/1` function must also check:
 | First scene's `transition_in` is null or a cut | Nothing to transition from |
 | Words are in order, non-overlapping, and `end_ms ≤` voice-over duration | Captions stay in sync |
 | Overlay `start_ms < end_ms ≤ scene.duration_ms` | Overlays stay inside their scene |
-| Video asset: `trim_start_ms + scene.duration_ms ≤ media.duration_ms`, or the renderer loops/freezes (decide and document) | Clip must be long enough |
+| Video asset: `trim_start_ms + scene.duration_ms ≤ media.duration_ms`; otherwise the renderer freezes the last frame (D13), so this is a warning, not an error | Clip should be long enough |
 | Total duration within ±25% of `brief.target_duration_ms` | Pipeline sanity check, warning only |
 | `content_hash` matches the bytes at `uri` (render time) | Determinism |
 
@@ -88,7 +106,7 @@ and the loader keeps a migration for every older version.
 
 ## Open questions to settle while building the renderer
 
-- Video clip shorter than its scene: loop, freeze the last frame, or reject?
+- ~~Video clip shorter than its scene~~ Settled in F03: freeze the last frame (D13).
 - Font handling: bundle a small set of fonts (e.g. Inter) and treat font files
   as assets with hashes, so text renders identically everywhere?
 - Where the LUFS loudness pass runs: in the Rust renderer or via FFmpeg's

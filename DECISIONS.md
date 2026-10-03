@@ -71,3 +71,28 @@ Byte-identical output (rule 3, F06) is guaranteed only for the same renderer
 version and the same pinned FFmpeg build (via `flake.lock`) on the same CPU
 architecture. FFmpeg is run single-threaded with bitexact flags.
 **Cost:** slower encode; output may differ across FFmpeg versions or architectures.
+
+## D13. A video clip shorter than its scene freezes on its last frame
+The renderer holds the final decoded frame until the scene ends. Chosen over
+looping (can show a visible jump, more code) and rejecting (real stock clips are
+often shorter than the narration). Documented in `spec/SPEC.md`.
+**Cost:** a long freeze looks like a pause. The stock step (F11) should prefer
+clips at least as long as the scene.
+
+## D14. The renderer warns and skips spec features whose feature is not built yet
+Until each lands, the renderer prints `warning:` lines on stderr and renders
+without: voice-over and music audio (F05), captions, overlays and non-cut
+transitions (F04). A crossfade becomes a cut. Each warning goes away with the
+feature that implements it.
+**Cost:** a render can silently differ from the spec's intent. Elixir (F07) must
+surface the warnings, and the checks in each feature's tests must fail if a
+warning remains.
+
+## D15. Validation is split: Elixir is the gate, Rust parses strictly
+`Retake.Spec` (F01) enforces ranges, patterns and semantic rules. The renderer
+parses the spec into strict typed structs (unknown fields and wrong types are
+rejected, enums are checked) plus sanity checks (spec_version, 1080x1920, fps),
+and fails clearly on anything it cannot proceed without (missing asset file).
+No JSON Schema crate in Rust.
+**Cost:** two parsers for one format; numeric ranges are unchecked in Rust, so a
+spec can pass Rust and fail F01. A cross-check test uses the shared examples.
