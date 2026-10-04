@@ -43,8 +43,11 @@ defmodule Retake.Videos.Runner do
     Videos.broadcast(id, {:video_status, "running"})
 
     case build_client(video) do
-      {:ok, client} -> execute(video, client)
-      {:error, reason} -> finish_failed(new_state(video), %{step: :setup, scene: nil, reason: reason})
+      {:ok, client} ->
+        execute(video, client)
+
+      {:error, reason} ->
+        finish_failed(new_state(video), %{step: :setup, scene: nil, reason: reason})
     end
   end
 

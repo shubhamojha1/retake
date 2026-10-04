@@ -31,7 +31,11 @@ defmodule Retake.Videos.ProgressTest do
     test "leaves out the render's output path" do
       event = %{step: :render, scene: nil, status: :done, output: "/srv/out/v-1.mp4"}
 
-      assert Progress.event_json(event) == %{"step" => "render", "scene" => nil, "status" => "done"}
+      assert Progress.event_json(event) == %{
+               "step" => "render",
+               "scene" => nil,
+               "status" => "done"
+             }
     end
 
     test "a failure's reason becomes a message in words" do
