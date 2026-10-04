@@ -25,6 +25,11 @@ defmodule Retake.CLI do
   @spec default_config_path() :: Path.t()
   def default_config_path, do: Path.expand("../config/providers.toml")
 
+  @doc "The project root: the directory above the one holding the providers file."
+  @spec project_root(Path.t()) :: Path.t()
+  def project_root(config_path),
+    do: config_path |> Path.expand() |> Path.dirname() |> Path.dirname()
+
   @doc """
   Inside WSL, the path at which Windows can open a Linux file (`\\\\wsl$\\<distro>\\...`);
   `nil` elsewhere.
@@ -63,6 +68,17 @@ defmodule Retake.CLI do
   def describe({:no_stock_found, queries}, _path) do
     "no stock footage or photo found for: " <> Enum.map_join(queries, ", ", &inspect/1)
   end
+
+  # A failed render: `Retake.Render` errors are maps with a message.
+  def describe(%{kind: kind, message: message}, _path), do: "#{kind}: #{message}"
+
+  def describe({:spec_invalid, errors}, _path) do
+    "the assembled spec is invalid (a bug in the pipeline):\n" <>
+      Enum.map_join(errors, "\n", fn e -> "  #{e.path}: #{e.message}" end)
+  end
+
+  def describe({:exception, message}, _path), do: "unexpected error: #{message}"
+  def describe({:invalid_input, message}, _path), do: message
 
   def describe({:all_providers_failed, attempts}, _path) do
     "no provider could answer:\n" <>

@@ -86,6 +86,33 @@ web:
 script *args:
     cd api && mix retake.script {{args}}
 
+# Make a whole video from a topic: `just video "why tea is good for you"`. Builds the renderer first.
+# Needs Kokoro (`just kokoro`) and GROQ_API_KEY + PIXABAY_API_KEY (see `mix help retake.video`).
+video *args: build-renderer
+    cd api && mix retake.video {{args}}
+
+# Build the release renderer that `just video` and `just dev` run.
+build-renderer:
+    cargo build --release -p retake_render
+
+# Speak a narration, transcribe it and time its words: `just voice "Tea calms the mind."`.
+# Needs the Kokoro server (`just kokoro`) and GROQ_API_KEY (see `mix help retake.voice`).
+voice *args:
+    cd api && mix retake.voice {{args}}
+
+# Start the Kokoro text-to-speech server (CPU) on http://localhost:8880. First start downloads the image and model.
+kokoro:
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    if docker ps --format '{{"{{.Names}}"}}' | grep -qx retake-kokoro; then echo "kokoro already running"; exit 0; fi
+    docker rm -f retake-kokoro >/dev/null 2>&1 || true
+    docker run -d --name retake-kokoro -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    echo "kokoro starting: wait until  curl -s localhost:8880/docs -o /dev/null -w '%{http_code}'  prints 200"
+
+# Stop and remove the Kokoro server.
+kokoro-stop:
+    docker rm -f retake-kokoro
+
 # Find and download stock footage for a phrase: `just stock "steaming tea cup closeup"`.
 # Needs PIXABAY_API_KEY or PEXELS_API_KEY (see `mix help retake.stock`).
 stock *args:
