@@ -23,6 +23,9 @@ defmodule Retake.Providers.Client do
   alias Retake.Providers.{Adapters, Config, Provider, Usage}
   alias Retake.Storage
 
+  # A little past when the limit clears, so the retry does not land a millisecond early.
+  @wait_margin 25
+
   @enforce_keys [:config, :profile, :storage, :cache_root]
   defstruct [
     :config,
@@ -32,7 +35,9 @@ defmodule Retake.Providers.Client do
     env: nil,
     usage: Usage,
     video_id: nil,
-    now: nil
+    now: nil,
+    max_wait_ms: 0,
+    sleep: &Process.sleep/1
   ]
 
   @type t :: %__MODULE__{
@@ -43,17 +48,77 @@ defmodule Retake.Providers.Client do
           env: %{String.t() => String.t()} | nil,
           usage: GenServer.server(),
           video_id: String.t() | nil,
-          now: DateTime.t() | nil
+          now: DateTime.t() | (-> DateTime.t()) | nil,
+          max_wait_ms: non_neg_integer(),
+          sleep: (non_neg_integer() -> term())
         }
 
   @doc """
   Options: `:config`, `:profile`, `:storage`, `:cache_root` (required); `:env` (a map of
   environment variables, default the real one); `:usage` (default the app's
   `Retake.Providers.Usage`); `:video_id` (for the per-video budget cap); `:now` (a
-  `DateTime`, for tests).
+  `DateTime`, or a function returning one, for tests); `:max_wait_ms` (see below) and
+  `:sleep` (default `Process.sleep/1`, replaced in tests).
+
+  `:max_wait_ms` (default 0, no waiting) is how long, in total, one `call/4` may wait for a
+  rate limit to clear. When every provider failed and some of that was a rate limit that
+  clears within the budget, the call sleeps until then and tries again instead of failing.
+  A long video makes many calls to a free service with a few requests a minute; this is how
+  they get through.
   """
   @spec new(keyword()) :: t()
   def new(opts), do: struct!(__MODULE__, opts)
+
+  @doc """
+  A client from a providers file (`config/providers.toml`). The storage and cache
+  directories come from its `[storage]` and `[cache]` tables; relative paths are
+  relative to the project root, the directory above the file's own (`config/..`).
+
+  Options: `:profile` (default `RETAKE_PROFILE` from `:env`, else the file's default);
+  `:env`, `:usage`, `:video_id`, `:now`, `:max_wait_ms`, `:sleep` as in `new/1`.
+
+  Returns `{:error, errors}` for an invalid file, `{:error, {:unknown_profile, name}}`
+  or `{:error, {:unsupported_storage_backend, name}}`.
+  """
+  @spec from_file(Path.t(), keyword()) :: {:ok, t()} | {:error, term()}
+  def from_file(path, opts \\ []) do
+    with {:ok, config} <- Config.load(path) do
+      root = path |> Path.expand() |> Path.dirname() |> Path.dirname()
+      profile = Keyword.get(opts, :profile) || Config.profile_name(config, opts[:env])
+
+      with :ok <- check_profile(config, profile),
+           {:ok, storage} <- storage(config, root) do
+        extra = Keyword.take(opts, [:env, :usage, :video_id, :now, :max_wait_ms, :sleep])
+
+        {:ok,
+         new(
+           [
+             config: config,
+             profile: profile,
+             storage: storage,
+             cache_root: Path.expand(config.cache["root"] || "./.retake/cache", root)
+           ] ++ extra
+         )}
+      end
+    end
+  end
+
+  defp check_profile(config, profile) do
+    if Map.has_key?(config.profiles, profile),
+      do: :ok,
+      else: {:error, {:unknown_profile, profile}}
+  end
+
+  defp storage(config, root) do
+    case config.storage["backend"] || "local" do
+      "local" ->
+        {:ok,
+         Retake.Storage.Local.new(Path.expand(config.storage["root"] || "./.retake/store", root))}
+
+      other ->
+        {:error, {:unsupported_storage_backend, other}}
+    end
+  end
 
   @doc """
   Makes `request` to the providers for `capability`. Returns `{:ok, entry, :hit | :miss}`
@@ -64,6 +129,40 @@ defmodule Retake.Providers.Client do
   @spec call(t(), atom(), map(), keyword()) ::
           {:ok, Cache.Entry.t(), :hit | :miss} | {:error, term()}
   def call(%__MODULE__{} = client, capability, request, opts \\ []) do
+    call_waiting(client, capability, request, opts, 0)
+  end
+
+  # Tries the call; if every provider failed and a rate limit among them clears within the
+  # waiting budget, waits for it and tries again.
+  defp call_waiting(client, capability, request, opts, waited) do
+    case attempt(client, capability, request, opts) do
+      {:error, {:all_providers_failed, attempts}} = failure ->
+        case rate_limit_wait(attempts) do
+          ms when is_integer(ms) and waited + ms + @wait_margin <= client.max_wait_ms ->
+            client.sleep.(ms + @wait_margin)
+            call_waiting(client, capability, request, opts, waited + ms + @wait_margin)
+
+          _ ->
+            failure
+        end
+
+      other ->
+        other
+    end
+  end
+
+  # The soonest a rate-limited provider will take another call, or nil if none was rate-limited.
+  defp rate_limit_wait(attempts) do
+    waits =
+      Enum.flat_map(attempts, fn
+        %{reason: {:rate_limited, _window, ms}} -> [ms]
+        _other -> []
+      end)
+
+    if waits == [], do: nil, else: Enum.min(waits)
+  end
+
+  defp attempt(client, capability, request, opts) do
     with {:ok, providers} <- Providers.resolve(client.config, client.profile, capability) do
       parts = fn provider -> parts(provider, capability, request) end
 
@@ -90,7 +189,10 @@ defmodule Retake.Providers.Client do
     {now, now_ms} = clock(client)
 
     run_opts = [env: client.env, usage: client.usage, video_id: client.video_id, now: now_ms]
-    call_adapter = fn provider, key -> call_adapter(provider, key, request, opts[:validate]) end
+
+    call_adapter = fn provider, key ->
+      call_adapter(client, provider, key, request, opts[:validate])
+    end
 
     with {:ok, output, %{provider: name, usage: usage}} <-
            Providers.run(client.config, client.profile, capability, call_adapter, run_opts),
@@ -108,16 +210,26 @@ defmodule Retake.Providers.Client do
     end
   end
 
-  defp call_adapter(%Provider{} = provider, key, request, validate) do
+  defp call_adapter(client, %Provider{} = provider, key, request, validate) do
     case Adapters.fetch(provider.adapter) do
       :error ->
         {:error, {:unknown_adapter, provider.adapter}}
 
       {:ok, adapter} ->
-        with {:ok, output, usage} <- adapter.call(provider, key, request),
+        with {:ok, output, usage} <-
+               invoke(adapter, client, provider, key, effective(provider, request)),
              :ok <- validate_output(validate, output) do
           {:ok, output, usage}
         end
+    end
+  end
+
+  # An adapter that needs the storage (to read an audio file) defines call/4.
+  defp invoke(adapter, client, provider, key, request) do
+    if Code.ensure_loaded?(adapter) and function_exported?(adapter, :call, 4) do
+      adapter.call(provider, key, request, %{storage: client.storage})
+    else
+      adapter.call(provider, key, request)
     end
   end
 
@@ -130,12 +242,24 @@ defmodule Retake.Providers.Client do
     end
   end
 
+  # The request as this provider will actually receive it: its adapter may fill in defaults
+  # from the provider's settings (`Retake.Providers.Adapter.normalize_request/2`).
+  defp effective(provider, request) do
+    with {:ok, adapter} <- Adapters.fetch(provider.adapter),
+         true <-
+           Code.ensure_loaded?(adapter) and function_exported?(adapter, :normalize_request, 2) do
+      adapter.normalize_request(provider, request)
+    else
+      _ -> request
+    end
+  end
+
   defp parts(provider, capability, request) do
     %{
       capability: capability,
       provider: provider.name,
       model: to_string(provider.options["model"] || ""),
-      request: request
+      request: effective(provider, request)
     }
   end
 
@@ -151,10 +275,9 @@ defmodule Retake.Providers.Client do
     }
   end
 
-  defp clock(%__MODULE__{now: nil}) do
-    now = DateTime.utc_now()
-    {now, DateTime.to_unix(now, :millisecond)}
-  end
+  defp clock(%__MODULE__{now: nil}), do: tick(DateTime.utc_now())
+  defp clock(%__MODULE__{now: fun}) when is_function(fun, 0), do: tick(fun.())
+  defp clock(%__MODULE__{now: now}), do: tick(now)
 
-  defp clock(%__MODULE__{now: now}), do: {now, DateTime.to_unix(now, :millisecond)}
+  defp tick(now), do: {now, DateTime.to_unix(now, :millisecond)}
 end

@@ -13,7 +13,10 @@ config :retake,
   # The renderer is a separate program run as a Port (decision D4). The release build
   # is the default; test.exs points at the debug build; RETAKE_RENDERER_BIN overrides
   # all of them (runtime.exs).
-  renderer_bin: Path.expand("../../target/release/retake_render", __DIR__)
+  renderer_bin: Path.expand("../../target/release/retake_render", __DIR__),
+  # Video jobs (Retake.Videos.Runner): the providers file, and where finished MP4s go.
+  providers_config: Path.expand("../../config/providers.toml", __DIR__),
+  output_dir: Path.expand("../../.retake/out", __DIR__)
 
 # Configure the endpoint
 config :retake, RetakeWeb.Endpoint,

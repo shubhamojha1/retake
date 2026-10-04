@@ -189,3 +189,135 @@ Left open:
 - Warnings (D14) are returned but nothing surfaces them to users yet (F13/F14).
 - The renderer child processes are not killed explicitly on timeout (they exit
   when their pipes close).
+
+## F10. Script step (passing, 2026-10-04)
+
+`Retake.Providers.Client` (10a): the one call path for pipeline steps. Resolves
+the providers, looks in the request cache for each in turn (a hit costs nothing and
+uses no rate limit), calls through `Providers.run` (fallbacks, limits, budget) via
+the adapter registry, validates before storing (`:validate`; invalid answers are
+never cached, D21), stores with provenance. `Cache.lookup/3` and `store/6` were
+added for it. `Client.from_file/2` builds one from `config/providers.toml`.
+
+`openai_compatible` adapter (10b) on Req: bearer auth, `response_format` per the
+provider's `structured_output`, token usage, structured errors, API key redacted
+from any echoed message (rule 7). Tests use `Req.Test` stubs; an unstubbed request
+raises (rule 6).
+
+`Retake.Pipeline.Script` (10c): brief to title + scenes. Prompt asks for ONLY a
+JSON object, sizes the script from the target length (about 6 s a scene, 2.5
+words/s), parses leniently (markdown fence, chatter), validates against the schema,
+cleans whitespace, retries a rejected reply with the errors spelled out (max 3),
+warns on a script far from the target length. `mix retake.script` / `just script`
+(10d) runs it for real and prints it; `just setup` copies the example config.
+
+Tests: 13 client + 19 adapter + 31 script + 10 from_file, all written before or with
+the code. Real run verified by the user against Groq (`openai/gpt-oss-120b`): two
+topics produced 8-scene scripts and the repeat run was answered from the cache.
+
+Left open:
+- The prompt is a first draft; the user will tune it later.
+- Invalid replies are not charged to the budget (D21).
+- `[cache] enabled = false` in providers.toml is read but not honoured.
+- Some visual queries are abstract ("heart monitor tea"); F11 will show how Pexels copes.
+
+## F11. Stock footage step (passing, 2026-10-04)
+
+`Retake.Pipeline.Stock.find(client, scene)`: a scene's `visual_query` becomes a
+stored stock video or photo as a ready spec asset (kind, `store://` uri, content
+hash, media incl. duration for video, licence, attribution, provenance). Two
+cached provider calls (D22): a search, then a download. Videos first, then photos;
+a query with no result is retried with its first two words. Choosing: portrait
+beats landscape, a clip long enough for the narration (words / 2.5 s + 0.5 s, at
+least 3 s) beats a short one, then the provider's order; inside a candidate the
+smallest file at least 1080 on its short side, else the biggest. A short clip is
+used with a warning (last frame held, D13).
+
+Adapters (providers layer): `pexels` and `pixabay` on Req, same request and
+candidate shape so the step works with either; `Adapters.Download` is the shared
+safe download (https only, host allowlist with exact suffix matching, no redirects,
+no credentials, size cap, known media types); `Adapters.Http` shares error handling
+and redacts the API key. Test stubs are per adapter (`req_options` map).
+`mix retake.stock` / `just stock` runs the step for real.
+
+Pexels API key issuance is paused (2026-10-04): the Pexels adapter is tested with
+stubs and skipped at run time without a key; Pixabay answers. Real run verified by
+the user with a Pixabay key: three clips downloaded (one vertical with no audio,
+two landscape). Clip audio is discarded by the renderer by design.
+
+Tests: 24 stock step, 26 Pexels, 18 Pixabay, plus the shared adapter code. One test
+bug found: a one-letter API key garbled the redacted message.
+
+Left open:
+- Stock covers abstract queries loosely ("heart monitor tea"); a generated-visuals
+  provider (AI images + motion) is the planned upgrade, behind the same step.
+- Pixabay photos top out at 1280/1920 px without an approved account, so a vertical
+  photo is upscaled in the render.
+- Landscape clips are cropped to portrait by cover fit.
+- Downloads count against the rate limit like searches (D22).
+
+## F12. Voice and timing (passing, 2026-10-04)
+
+`Retake.Pipeline.Voice.generate(client, scene, opts)`: narration (whitespace
+collapsed) to speech (WAV, stored and cached), duration read from the WAV header
+(`Retake.Media.Wav`, pure Elixir, handles extra chunks, odd padding and streamed
+headers), the stored audio transcribed with word timestamps, words tidied for the
+spec (sorted, non-overlapping, at least 1 ms, none past the audio), scene length =
+offset (300 ms) + audio + padding (500 ms). Unusable replies (no audio, not a WAV,
+too long for a 30 s scene, empty transcript) are never cached. Returns a spec audio
+asset, the scene's `voiceover` (without its asset id), the scene duration and warnings
+(transcript far from the narration's word count).
+
+Adapters: `openai_compatible_speech` (Kokoro, OpenAI) and
+`openai_compatible_transcription` (Groq Whisper, multipart upload, `verbose_json` word
+timestamps). Two additions to the provider layer: the optional `normalize_request/2`
+adapter callback (defaults such as voice and speed enter the request, so the cache key
+and provenance include them), and the optional `call/4` (an adapter that must read a
+stored file gets `%{storage: storage}`; the request names the audio by its
+content-addressed `store://` uri). `mix retake.voice` / `just voice` and `just kokoro`
+(Kokoro-FastAPI CPU image on :8880 in Docker) run it for real.
+
+Tests: 4 normalisation + 18 speech adapter + 14 WAV + 24 transcription adapter + 22
+voice step, written with the code. Verified for real by the user: Kokoro spoke the
+text, the words in the WAV were audible and timed.
+
+Left open:
+- The transcript's timings are Whisper's, not aligned to the script text.
+- Asset provenance records the speech call only, not the transcription.
+- Groq's free transcription limit (about 15 requests a minute) will bite a long video:
+  F13 should wait out a short rate limit instead of failing.
+
+## F13. Prompt to video (passing, 2026-10-04)
+
+- 13a `Retake.Pipeline.Assemble.build/1`: script + stock + voice outputs become one
+  validated spec (ids s1/vis-1/vo-1, scene length from the voice step, a slow camera
+  move on stills in four patterns, on-screen text as a top overlay, cuts, captions on,
+  no music). 22 tests. (Two bugs found in tests, not in code: a module attribute calling
+  a local helper in voice_test.exs, and a 2 s scene around 3 s of audio in assemble_test.)
+- 13b `Retake.Pipeline.run/3`: script, then stock and voice per scene in parallel
+  (3 scenes at once), assemble, render; events through `:on_event`; the first failure
+  ends the run as `%{step, scene, reason}`. `Client` gained `:max_wait_ms` (wait out a short
+  rate limit instead of failing) and an injectable clock and sleep. Offline end-to-end tests
+  use `Retake.Test.ScriptedAdapter` (a stand-in for every provider with no per-process
+  state) and the real renderer, and check the MP4 with ffprobe.
+- 13c `mix retake.video` / `just video`: the whole pipeline with real services. First real
+  run verified by the user: it works; the video has an understandable narrative and looks
+  roughly stitched together (hard cuts, no captions on screen, no music, stock footage only
+  loosely matching, landscape clips cropped).
+- 13d `videos` table, `Retake.Videos` (context, PubSub topic `video:<id>`), `Videos.Progress`
+  (pure: pipeline events into a JSON progress map) and `Videos.Runner` (D23). Boot sweep
+  marks jobs left running as failed. Two bugs found by the tests: a private `update/2` clashed
+  with the `update` macro of `Ecto.Query`, and progress was never saved (the struct was changed
+  before `Repo.update`, so Ecto saw no change); also a crash reason of the form
+  `{:function_clause, stacktrace}` was printed whole.
+- 13e HTTP API: `POST /api/videos` (202, or 422 with every problem), `GET /api/videos`,
+  `GET /api/videos/:id` (with the spec), `GET /api/videos/:id/file` (409 before it is done;
+  `Range` with 206 and 416; `?download=1`). The file route is outside the `:api` pipeline so a
+  player's `Accept` header cannot cause a 406. The runner is replaceable through
+  `config :retake, :video_runner` (tests use a no-op one).
+- Verified by the user: `videos_test`, `videos/` and `video_controller_test` (58 tests, all
+  pass). Not verified by me: `pipeline_test` in the same run, the full `just test`, and
+  `POST /api/videos` against a running server with real services (do this with F14).
+
+Quality gaps seen in the first real video (to address later): captions and transitions
+(F04), music and loudness (F05b), better visual matching and generated visuals (F16/F17).

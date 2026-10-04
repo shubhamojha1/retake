@@ -26,10 +26,10 @@ defmodule Retake.Providers.Adapters.OpenAICompatible do
 
   @behaviour Retake.Providers.Adapter
 
+  alias Retake.Providers.Adapters.Http
   alias Retake.Providers.Provider
 
   @default_timeout 60_000
-  @max_message 300
 
   @impl true
   def call(%Provider{} = provider, api_key, request) do
@@ -61,7 +61,7 @@ defmodule Retake.Providers.Adapters.OpenAICompatible do
         retry: false
       ]
       |> put_auth(api_key)
-      |> Keyword.merge(Application.get_env(:retake, :req_options, []))
+      |> Keyword.merge(Http.options(__MODULE__))
 
     Req.new(options)
   end
@@ -111,17 +111,11 @@ defmodule Retake.Providers.Adapters.OpenAICompatible do
   defp handle({:ok, %Req.Response{status: 200, body: body}}, api_key),
     do: unexpected(body, api_key)
 
-  defp handle({:ok, %Req.Response{status: status, body: body}}, api_key) do
-    {:error, {:http, status, error_message(body, api_key)}}
-  end
-
-  defp handle({:error, %{reason: reason}}, _api_key), do: {:error, {:transport, reason}}
-
-  defp handle({:error, other}, api_key),
-    do: {:error, {:transport, redact(inspect(other), api_key)}}
+  # Any other status, and transport failures.
+  defp handle(failure, api_key), do: Http.failure(failure, api_key)
 
   defp unexpected(body, api_key),
-    do: {:error, {:unexpected_response, error_message(body, api_key)}}
+    do: {:error, {:unexpected_response, Http.message(body, api_key)}}
 
   # ponytail: token counts only; cost is 0.0 because the free profile is the target. A paid
   # model needs a price table to turn tokens into dollars.
@@ -132,20 +126,4 @@ defmodule Retake.Providers.Adapters.OpenAICompatible do
   end
 
   defp units(_other), do: %{}
-
-  defp error_message(%{"error" => %{"message" => message}}, api_key) when is_binary(message) do
-    message |> redact(api_key) |> truncate()
-  end
-
-  defp error_message(body, api_key) when is_binary(body),
-    do: body |> redact(api_key) |> truncate()
-
-  defp error_message(body, api_key), do: body |> inspect() |> redact(api_key) |> truncate()
-
-  defp redact(text, key) when is_binary(key) and key != "",
-    do: String.replace(text, key, "[redacted]")
-
-  defp redact(text, _key), do: text
-
-  defp truncate(text), do: String.slice(text, 0, @max_message)
 end
