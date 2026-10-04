@@ -286,3 +286,38 @@ Left open:
 - Asset provenance records the speech call only, not the transcription.
 - Groq's free transcription limit (about 15 requests a minute) will bite a long video:
   F13 should wait out a short rate limit instead of failing.
+
+## F13. Prompt to video (passing, 2026-10-04)
+
+- 13a `Retake.Pipeline.Assemble.build/1`: script + stock + voice outputs become one
+  validated spec (ids s1/vis-1/vo-1, scene length from the voice step, a slow camera
+  move on stills in four patterns, on-screen text as a top overlay, cuts, captions on,
+  no music). 22 tests. (Two bugs found in tests, not in code: a module attribute calling
+  a local helper in voice_test.exs, and a 2 s scene around 3 s of audio in assemble_test.)
+- 13b `Retake.Pipeline.run/3`: script, then stock and voice per scene in parallel
+  (3 scenes at once), assemble, render; events through `:on_event`; the first failure
+  ends the run as `%{step, scene, reason}`. `Client` gained `:max_wait_ms` (wait out a short
+  rate limit instead of failing) and an injectable clock and sleep. Offline end-to-end tests
+  use `Retake.Test.ScriptedAdapter` (a stand-in for every provider with no per-process
+  state) and the real renderer, and check the MP4 with ffprobe.
+- 13c `mix retake.video` / `just video`: the whole pipeline with real services. First real
+  run verified by the user: it works; the video has an understandable narrative and looks
+  roughly stitched together (hard cuts, no captions on screen, no music, stock footage only
+  loosely matching, landscape clips cropped).
+- 13d `videos` table, `Retake.Videos` (context, PubSub topic `video:<id>`), `Videos.Progress`
+  (pure: pipeline events into a JSON progress map) and `Videos.Runner` (D23). Boot sweep
+  marks jobs left running as failed. Two bugs found by the tests: a private `update/2` clashed
+  with the `update` macro of `Ecto.Query`, and progress was never saved (the struct was changed
+  before `Repo.update`, so Ecto saw no change); also a crash reason of the form
+  `{:function_clause, stacktrace}` was printed whole.
+- 13e HTTP API: `POST /api/videos` (202, or 422 with every problem), `GET /api/videos`,
+  `GET /api/videos/:id` (with the spec), `GET /api/videos/:id/file` (409 before it is done;
+  `Range` with 206 and 416; `?download=1`). The file route is outside the `:api` pipeline so a
+  player's `Accept` header cannot cause a 406. The runner is replaceable through
+  `config :retake, :video_runner` (tests use a no-op one).
+- Verified by the user: `videos_test`, `videos/` and `video_controller_test` (58 tests, all
+  pass). Not verified by me: `pipeline_test` in the same run, the full `just test`, and
+  `POST /api/videos` against a running server with real services (do this with F14).
+
+Quality gaps seen in the first real video (to address later): captions and transitions
+(F04), music and loudness (F05b), better visual matching and generated visuals (F16/F17).

@@ -156,3 +156,15 @@ says how it was found. The adapter only downloads from the stock service's own
 hosts (https, an allowlist), because the URL comes from an API response.
 **Cost:** a download counts against the provider's rate limit like a search does;
 the same file found by two queries is downloaded twice (storage keeps one copy).
+
+## D23. A video job is one database row, run by one background process, and is not resumed after a restart
+`Retake.Videos.Runner` runs `Retake.Pipeline` under `Retake.TaskSupervisor`, and its events
+come back to the runner process, which alone writes the row (progress as a JSON column, kept by
+the pure `Retake.Videos.Progress`) and broadcasts on PubSub `video:<id>`. A crash in the pipeline
+becomes a failed job. Every event is broadcast; the row is written on each event except render
+progress, which is written every 5%. When the app starts, jobs left queued or running are marked
+failed ("the app stopped"): the user asks again, and the request cache makes the repeat cheap.
+`progress` leaves out server file paths: a finished video is reached by its `video_url`.
+**Cost:** no job queue, no limit on jobs at once (each job already runs 3 scenes at a time, and the
+providers' rate limits and budget are shared through `Retake.Providers.Usage`), and a restart loses
+the render in progress.

@@ -2,8 +2,8 @@
   "phase": 1,
   "states": ["not_started", "active", "blocked", "passing"],
   "rule": "Work on one feature at a time. A feature moves to passing only when its verification command succeeds. Verification commands are proposals; finalise each one before starting the feature.",
-  "order": "F00 > F01 > F02 > F03 > F05a > F08 > F09 > F07 > F10 > F11 > F12 > F13 > F16 > F17 > F14 > F04 > F05b > F06 > F15",
-  "order_note": "Reordered 2026-10-04: first goal is prompt-to-video end to end, quality second. F04 (transitions/captions), F05b (music/ducking/loudness) and F06 (determinism) move after the pipeline and web MVP. Generated visuals (F16 images with motion, F17 video clips) come right after F13, by the user's decision the same day; the roadmap had them in Phase 5.",
+  "order": "F00 > F01 > F02 > F03 > F05a > F08 > F09 > F07 > F10 > F11 > F12 > F13 > F14 > F16 > F17 > F04 > F05b > F06 > F15",
+  "order_note": "Reordered 2026-10-04: first goal is prompt-to-video end to end, quality second. F04 (transitions/captions), F05b (music/ducking/loudness) and F06 (determinism) move after the pipeline and web MVP. Generated visuals (F16 images with motion, F17 video clips) were pulled forward from roadmap Phase 5 to right after the web UI (F14), by the user's decisions the same day: the UI keeps its original place right after the pipeline (F13).",
   "features": [
     {
       "id": "F00-setup",
@@ -133,8 +133,8 @@
         "13d videos table, Videos context, background Runner, PubSub events",
         "13e HTTP API: POST /api/videos, GET /api/videos/:id, file with Range"
       ],
-      "verification": "cd api && mix test test/retake/pipeline_test.exs test/retake_web/controllers/video_controller_test.exs",
-      "state": "not_started"
+      "verification": "cd api && mix test test/retake/pipeline_test.exs test/retake/videos_test.exs test/retake/videos test/retake_web/controllers/video_controller_test.exs",
+      "state": "passing"
     },
     {
       "id": "F16-generated-images",
