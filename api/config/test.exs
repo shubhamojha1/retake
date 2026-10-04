@@ -48,6 +48,11 @@ config :retake,
 # Tests run the debug renderer (`cargo build -p retake_render`, done by `just test`).
 config :retake, renderer_bin: Path.expand("../../target/debug/retake_render", __DIR__)
 
+# Video jobs: tests write MP4s under the system temp dir, and do not sweep the database on boot.
+config :retake,
+  output_dir: Path.join(System.tmp_dir!(), "retake-test-out"),
+  fail_interrupted_on_boot: false
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
