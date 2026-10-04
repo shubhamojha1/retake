@@ -70,21 +70,29 @@ hooks:
 # --- dev -------------------------------------------------------------------
 
 # Run API (:4010) and web (:5173) together. Ctrl-C stops both.
-dev: pg-start
+# Builds the release renderer (videos are rendered by it) and migrates the dev database first.
+dev: pg-start build-renderer
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    (cd api && mix phx.server) &
+    (cd api && mix ecto.migrate && mix phx.server) &
     api_pid=$!
     trap 'kill $api_pid 2>/dev/null || true' EXIT
     cd web && npm run dev
 
-# Phoenix API only, on http://localhost:4010 (IEx-attached).
-api: pg-start
+# Phoenix API only, on http://localhost:4010 (IEx-attached). Same preparation as `just dev`.
+api: pg-start build-renderer
+    cd api && mix ecto.migrate
     cd api && iex -S mix phx.server
 
 # Web dev server only, on http://localhost:5173 (proxies /api -> :4010).
 web:
     cd web && npm run dev
+
+# End-to-end check of the RUNNING system with real services: asks `just api` for a 5 second video,
+# follows it over the websocket and fetches the MP4 by byte range. Minutes, network: not part of `just test`.
+# Needs `just api`, `just kokoro` and the provider keys (see `mix help retake.video`).
+e2e-smoke:
+    cd web && node scripts/e2e-smoke.mjs
 
 # Write a video script for a topic with the real LLM: `just script "why tea is good for you"`.
 # Needs config/providers.toml and GROQ_API_KEY (see `mix help retake.script` for options).
