@@ -24,9 +24,9 @@ defmodule Retake.Pipeline do
         status: :started | :done | :failed | :progress,
         ...}
 
-  `:done` events carry a little detail (the number of scenes, the kind of footage found, the
-  voice-over length); `:failed` carries `reason`; render `:progress` carries `done` and `total`
-  (frames).
+  `:done` events carry a little detail (the number of scenes, the title and an `outline` of
+  narration and footage search for each scene; the kind of footage found; the voice-over length);
+  `:failed` carries `reason`; render `:progress` carries `done` and `total` (frames).
 
   ## Failures
 
@@ -175,7 +175,15 @@ defmodule Retake.Pipeline do
     end
   end
 
-  defp script_detail(script), do: %{scenes: length(script.scenes), title: script.title}
+  # The outline lets a page show the script while the footage and voices are still being made.
+  defp script_detail(script) do
+    %{
+      scenes: length(script.scenes),
+      title: script.title,
+      outline:
+        for(scene <- script.scenes, do: %{narration: scene.narration, query: scene.visual_query})
+    }
+  end
 
   defp stock_detail(%{asset: asset, query: query}) do
     %{kind: asset["kind"], query: query, credit: asset["license"]["attribution"]}

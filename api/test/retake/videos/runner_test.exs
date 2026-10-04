@@ -50,6 +50,15 @@ defmodule Retake.Videos.RunnerTest do
     Videos.get(video.id)
   end
 
+  # The last `{:video_progress, map}` that reached the test process (nil if none did).
+  defp last_progress(last \\ nil) do
+    receive do
+      {:video_progress, progress} -> last_progress(progress)
+    after
+      0 -> last
+    end
+  end
+
   describe "a job that works" do
     test "ends succeeded: the MP4 on disk, the spec, the length, the warnings", %{tmp_dir: dir} do
       use_client(dir)
@@ -104,6 +113,35 @@ defmodule Retake.Videos.RunnerTest do
                        %{"step" => "render", "status" => "running", "done" => _, "total" => _}}
 
       assert_received {:video_event, %{"step" => "render", "status" => "done"}}
+    end
+
+    test "tells watchers the whole progress map each time it is written", %{tmp_dir: dir} do
+      use_client(dir)
+
+      run_job()
+
+      # the first one (the script just announced)...
+      assert_received {:video_progress, %{"steps" => %{"brief" => %{"status" => "started"}}}}
+
+      # ...and the last one, sent when the job ended, is the finished state
+      progress = last_progress()
+      assert progress["steps"]["render"] == %{"status" => "done"}
+      assert progress["steps"]["script"]["status"] == "done"
+      assert Map.keys(progress["scenes"]) |> Enum.sort() == ["1", "2", "3"]
+    end
+
+    test "the script's outline is in the progress, for a page to show while scenes are made", %{
+      tmp_dir: dir
+    } do
+      use_client(dir)
+
+      %{progress: progress} = run_job()
+
+      assert [%{"narration" => narration, "query" => "clip video steam"} | _] =
+               progress["steps"]["script"]["outline"]
+
+      assert is_binary(narration) and narration != ""
+      assert length(progress["steps"]["script"]["outline"]) == 3
     end
   end
 

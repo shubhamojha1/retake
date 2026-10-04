@@ -6,7 +6,8 @@ defmodule Retake.Videos do
 
   Every change a watcher cares about is broadcast on the topic `"video:<id>"` (`subscribe/1`):
 
-      {:video_event, %{"step" => "stock", "scene" => 2, "status" => "done", ...}}
+      {:video_event, %{"step" => "stock", "scene" => 2, "status" => "done", ...}}  (every event)
+      {:video_progress, progress}  (the whole progress map, each time it is written)
       {:video_status, "running" | "succeeded" | "failed"}
   """
 

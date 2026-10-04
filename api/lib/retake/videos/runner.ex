@@ -131,8 +131,12 @@ defmodule Retake.Videos.Runner do
     end
   end
 
+  # Writes the progress and tells watchers the whole map (`{:video_progress, progress}`, what the
+  # channel pushes: a page keeps no copy of `Progress.record/2`). So watchers hear about render
+  # progress only every 5%, like the row.
   defp save_progress(%{video: video, progress: progress} = state) do
     {:ok, video} = Videos.update_progress(video, progress)
+    Videos.broadcast(video.id, {:video_progress, progress})
     %{state | video: video}
   end
 

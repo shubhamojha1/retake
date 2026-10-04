@@ -219,8 +219,11 @@ defmodule Retake.PipelineTest do
       {:ok, _} = run(client(dir), dir)
       events = events()
 
-      assert %{status: :done, scenes: 3, title: "Tea in three scenes"} =
+      assert %{status: :done, scenes: 3, title: "Tea in three scenes", outline: outline} =
                find(events, :script, nil, :done)
+
+      assert [%{narration: _, query: "clip video steam"}, %{query: "photo gradient leaves"}, _] =
+               outline
 
       for scene <- 1..3 do
         assert find(events, :stock, scene, :started)

@@ -15,6 +15,11 @@ defmodule RetakeWeb.Endpoint do
   #   websocket: [connect_info: [session: @session_options]],
   #   longpoll: [connect_info: [session: @session_options]]
 
+  # Live progress of video jobs for the web app (RetakeWeb.VideoChannel).
+  socket "/socket", RetakeWeb.UserSocket,
+    websocket: true,
+    longpoll: false
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # When code reloading is disabled (e.g., in production),
