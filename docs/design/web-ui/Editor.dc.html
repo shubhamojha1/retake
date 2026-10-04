@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scene editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+*{box-sizing:border-box}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.hv:hover{background:#1A1A20 !important}
+.pb:hover{filter:brightness(1.08)}
+.fld:focus{border-color:#FF6A3D !important;outline:0}
+:focus-visible{outline:2px solid #FF6A3D;outline-offset:2px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#26262E;border-radius:4px}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;height:900px;background:#0A0A0C;color:#EDEDF0;font-family:'Geist',system-ui,sans-serif">
+
+  <header style="flex:none;min-height:56px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:8px 16px;border-bottom:1px solid #1C1C22">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0">
+      <a href="Result.dc.html" aria-label="Back to result" class="hv" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#9A9AA6">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+      </a>
+      <span style="width:10px;height:10px;border-radius:50%;background:#FF6A3D"></span>
+      <span style="font-size:14px;font-weight:600">Why we dream</span>
+      <span style="height:22px;padding:0 8px;display:inline-flex;align-items:center;border-radius:6px;background:#1F1F26;font-size:10px;font-weight:500;letter-spacing:0.04em;color:#9A9AA6">PHASE 2 PREVIEW</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#8A8A96">Estimated <span style="font-family:'Geist Mono',monospace;color:#D4D4DC">{{ estimate }}</span></span>
+      <sc-if value="{{ hasStale }}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{ regen }}" class="pb" style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:0;border-radius:10px;background:#33280F;color:#F5B544;font-size:13px;font-weight:600">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" /></svg>
+          Regenerate changed ({{ staleCount }})
+        </button>
+      </sc-if>
+      <sc-if value="{{ allFresh }}" hint-placeholder-val="{{ false }}">
+        <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:1px solid #1F1F26;border-radius:10px;font-size:13px;color:#8A8A96">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5BD68A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
+          Everything up to date
+        </span>
+      </sc-if>
+      <a href="Result.dc.html" class="pb" style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:10px;background:#FF6A3D;color:#1A0B06;font-size:13px;font-weight:600">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14" /></svg>
+        Export MP4
+      </a>
+    </div>
+  </header>
+
+  <div style="flex:1;min-height:0;display:flex;flex-wrap:wrap">
+
+    <aside aria-label="Scenes" style="flex:1 1 300px;max-width:320px;min-height:0;overflow-y:auto;border-right:1px solid #1C1C22;padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 4px 12px">
+        <h2 style="margin:0;font-size:13px;font-weight:600">Scenes <span style="color:#8A8A96;font-weight:400">· 5</span></h2>
+        <button type="button" aria-label="Add scene" class="hv" style="width:30px;height:30px;border:1px solid #26262E;border-radius:8px;background:transparent;display:flex;align-items:center;justify-content:center;padding:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ scenes }}" as="s" hint-placeholder-count="5">
+          <button type="button" onClick="{{ s.pick }}" aria-pressed="{{ s.selected }}" class="hv" style="display:flex;gap:12px;width:100%;padding:10px;text-align:left;border-radius:12px;border:1px solid {{ s.cardBorder }};background:{{ s.cardBg }}">
+            <span style="display:block;width:44px;height:78px;flex:none;border-radius:8px;background:{{ s.tone }}"></span>
+            <span style="display:block;flex:1;min-width:0">
+              <span style="display:flex;justify-content:space-between;font-size:11px;color:#8A8A96"><span>Scene {{ s.n }}</span><span style="font-family:'Geist Mono',monospace">{{ s.dur }}s</span></span>
+              <span style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;font-size:12px;line-height:1.4;color:#D4D4DC">{{ s.text }}</span>
+              <span style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;font-weight:500;color:{{ s.statusColor }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ s.statusColor }}"></span>{{ s.status }}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </aside>
+
+    <section aria-label="Preview and timeline" style="flex:999 1 480px;min-width:0;min-height:0;display:flex;flex-direction:column">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px">
+        <div style="position:relative;width:252px;height:448px;border-radius:20px;overflow:hidden;border:1px solid #26262E;background:{{ cur.tone }}">
+          <div style="position:absolute;top:22px;left:0;right:0;text-align:center;font-size:22px;font-weight:600;letter-spacing:-0.02em">{{ cur.onScreen }}</div>
+          <div style="position:absolute;left:18px;right:18px;bottom:64px;text-align:center;font-size:19px;line-height:1.25;font-weight:600;text-shadow:0 2px 12px rgba(0,0,0,0.6)">{{ cap.before }} <span style="color:#FF6A3D">{{ cap.hi }}</span> {{ cap.after }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <button type="button" onClick="{{ toggle }}" aria-label="Play or pause" style="width:36px;height:36px;border-radius:50%;border:0;background:#EDEDF0;color:#0A0A0C;display:flex;align-items:center;justify-content:center;padding:0">
+            <sc-if value="{{ playing }}" hint-placeholder-val="{{ false }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+            </sc-if>
+            <sc-if value="{{ paused }}" hint-placeholder-val="{{ true }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z" /></svg>
+            </sc-if>
+          </button>
+          <span style="font-family:'Geist Mono',monospace;font-size:12px">0:11 <span style="color:#8A8A96">/ 0:44</span></span>
+        </div>
+      </div>
+
+      <div style="flex:none;border-top:1px solid #1C1C22;padding:12px 16px 14px;background:#0C0C0F">
+        <div style="display:flex;gap:12px">
+          <div style="width:64px;flex:none"></div>
+          <div style="flex:1;display:flex;justify-content:space-between;font-family:'Geist Mono',monospace;font-size:10px;color:#8A8A96"><span>0:00</span><span>0:10</span><span>0:20</span><span>0:30</span><span>0:40</span></div>
+        </div>
+        <div style="position:relative;margin-top:6px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="width:64px;flex:none;font-size:11px;color:#8A8A96">Scenes</span>
+            <div style="flex:1;display:flex;gap:3px">
+              <sc-for list="{{ scenes }}" as="s" hint-placeholder-count="5">
+                <button type="button" onClick="{{ s.pick }}" aria-label="Select scene {{ s.n }}" style="flex:{{ s.dur }} 1 0;min-width:0;height:36px;border-radius:6px;border:1px solid {{ s.blockBorder }};background:{{ s.tone }};padding:0 8px;text-align:left;font-size:11px;overflow:hidden;white-space:nowrap">{{ s.n }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="width:64px;flex:none;font-size:11px;color:#8A8A96">Voice</span>
+            <div style="flex:1;display:flex;gap:3px">
+              <sc-for list="{{ scenes }}" as="s" hint-placeholder-count="5">
+                <div style="flex:{{ s.dur }} 1 0;min-width:0;height:24px;border-radius:6px;background:{{ s.voiceBg }};border:1px solid {{ s.voiceBorder }}"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="width:64px;flex:none;font-size:11px;color:#8A8A96">Captions</span>
+            <div style="flex:1;display:flex;gap:3px">
+              <sc-for list="{{ scenes }}" as="s" hint-placeholder-count="5">
+                <div style="flex:{{ s.dur }} 1 0;min-width:0;height:16px;border-radius:5px;background:{{ s.voiceBg }};border:1px solid {{ s.voiceBorder }}"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="width:64px;flex:none;font-size:11px;color:#8A8A96">Music</span>
+            <div style="flex:1;height:16px;border-radius:5px;background:#1A1A20;border:1px solid #26262E;padding:0 8px;display:flex;align-items:center;font-size:10px;color:#8A8A96">Calm · library · ducked under voice</div>
+          </div>
+          <div style="position:absolute;top:-4px;bottom:-4px;left:calc(76px + (100% - 76px) * 0.25);width:2px;background:#FF6A3D;pointer-events:none"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside aria-label="Scene inspector" style="flex:1 1 320px;max-width:360px;min-height:0;overflow-y:auto;border-left:1px solid #1C1C22;padding:16px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <h2 style="margin:0;font-size:15px;font-weight:600">Scene {{ cur.n }}</h2>
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#8A8A96">{{ cur.range }}</span>
+      </div>
+
+      <sc-if value="{{ cur.isStale }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:14px;padding:12px 14px;border-radius:12px;background:#241D0D;border:1px solid #4A3A14;font-size:12px;line-height:1.5;color:#E8C47A">
+          Narration changed. Voice-over and captions will regenerate for this scene. The footage is kept.
+        </div>
+      </sc-if>
+
+      <div style="margin-top:18px">
+        <label for="narr" style="display:block;font-size:12px;color:#8A8A96">Narration</label>
+        <textarea id="narr" class="fld" rows="5" value="{{ cur.text }}" onChange="{{ onNarr }}" style="margin-top:6px;width:100%;resize:vertical;padding:10px 12px;border:1px solid #26262E;border-radius:10px;background:#0E0E12;color:#EDEDF0;font:400 13px/1.5 'Geist',system-ui,sans-serif"></textarea>
+      </div>
+
+      <div style="margin-top:18px">
+        <div style="font-size:12px;color:#8A8A96">Footage</div>
+        <div style="margin-top:6px;display:flex;gap:12px;padding:10px;border:1px solid #26262E;border-radius:12px;background:#0E0E12">
+          <div style="width:44px;height:78px;flex:none;border-radius:8px;background:{{ cur.tone }}"></div>
+          <div style="flex:1;min-width:0;font-size:12px;line-height:1.5">
+            <div style="font-weight:500;font-size:13px">{{ cur.clip }}</div>
+            <div style="color:#9A9AA6">Pexels · Pexels License</div>
+            <div style="color:#9A9AA6">Cost <span style="font-family:'Geist Mono',monospace">$0.00</span> · cached</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ cur.terms }}" as="t" hint-placeholder-count="2">
+            <span style="height:26px;padding:0 10px;display:inline-flex;align-items:center;border-radius:999px;background:#1A1A20;font-size:12px;color:#C4C4CE">{{ t }}</span>
+          </sc-for>
+          <button type="button" class="hv" style="height:26px;padding:0 10px;border:1px dashed #3A3A46;border-radius:999px;background:transparent;font-size:12px;color:#9A9AA6">+ term</button>
+        </div>
+        <button type="button" class="hv" style="margin-top:10px;height:34px;padding:0 12px;border:1px solid #26262E;border-radius:10px;background:transparent;font-size:12px">Find another clip</button>
+      </div>
+
+      <div style="margin-top:18px">
+        <label for="ost" style="display:block;font-size:12px;color:#8A8A96">On-screen text</label>
+        <input id="ost" class="fld" type="text" value="{{ cur.onScreen }}" style="margin-top:6px;width:100%;height:38px;padding:0 12px;border:1px solid #26262E;border-radius:10px;background:#0E0E12;color:#EDEDF0;font:400 13px 'Geist',system-ui,sans-serif">
+      </div>
+
+      <div style="margin-top:18px">
+        <div style="font-size:12px;color:#8A8A96">Transition in</div>
+        <div role="group" aria-label="Transition in" style="margin-top:6px;display:flex;padding:3px;border:1px solid #26262E;border-radius:10px;background:#0E0E12">
+          <sc-for list="{{ cur.transitions }}" as="t" hint-placeholder-count="3">
+            <span style="flex:1;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:{{ t.bg }};font-size:12px;color:{{ t.color }}">{{ t.label }}</span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;padding:12px 14px;border:1px solid #1F1F26;border-radius:12px;font-size:12px;line-height:1.55;color:#9A9AA6">
+        <span style="color:#8A8A96">Voice</span> Kokoro (local), Heart · <span style="color:#8A8A96">Motion</span> slow push-in, 1.0× to 1.12×
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  state = { sel: 's2', stale: ['s2'], narr: {}, playing: false };
+
+  renderVals() {
+    const { sel, stale, narr, playing } = this.state;
+    const mmss = (s) => '0:' + String(s).padStart(2, '0');
+    const base = [
+      { id: 's1', dur: 7, tone: '#1B2433', clip: 'Night city timelapse', terms: ['night city', 'sleeping person'], onScreen: 'Dreams', tr: 'Cut',
+        text: 'Every night, your brain builds a whole world, then forgets most of it.' },
+      { id: 's2', dur: 8, tone: '#2A1F1B', clip: 'Brain illustration', terms: ['brain illustration', 'notebook'], onScreen: 'Why?', tr: 'Crossfade',
+        text: 'Scientists still argue about why. One idea says dreams help sort the day’s memories.' },
+      { id: 's3', dur: 9, tone: '#172A27', clip: 'Forest at night', terms: ['forest night', 'running'], onScreen: '', tr: 'Crossfade',
+        text: 'Another says they let the brain rehearse for threats and surprises.' },
+      { id: 's4', dur: 11, tone: '#2B2616', clip: 'Abstract light', terms: ['static noise', 'abstract light'], onScreen: 'Just noise?', tr: 'Dip to black',
+        text: 'A third idea: dreams are just noise the sleeping mind tries to make sense of.' },
+      { id: 's5', dur: 9, tone: '#271B2E', clip: 'Moon through clouds', terms: ['moon clouds', 'bedroom window'], onScreen: 'Follow', tr: 'Crossfade',
+        text: 'Whatever the reason, tonight your brain will do it again. Follow for more.' }
+    ];
+    let t = 0;
+    const scenes = base.map((b, i) => {
+      const start = t; t += b.dur;
+      const text = narr[b.id] !== undefined ? narr[b.id] : b.text;
+      const isStale = stale.indexOf(b.id) >= 0;
+      const selected = b.id === sel;
+      const hatch = 'repeating-linear-gradient(135deg,#33280F 0 6px,#241D0D 6px 12px)';
+      return {
+        ...b, n: i + 1, text, isStale, selected,
+        range: mmss(start) + '–' + mmss(t),
+        status: isStale ? 'Stale · voice, captions' : 'Up to date',
+        statusColor: isStale ? '#F5B544' : '#5BD68A',
+        cardBorder: selected ? '#FF6A3D' : '#1F1F26',
+        cardBg: selected ? '#16161B' : '#101014',
+        blockBorder: selected ? '#FF6A3D' : 'transparent',
+        voiceBg: isStale ? hatch : '#1E2A22',
+        voiceBorder: isStale ? '#4A3A14' : '#26362C',
+        pick: () => this.setState({ sel: b.id }),
+        transitions: ['Cut', 'Crossfade', 'Dip to black'].map((l) => ({
+          label: l, bg: l === b.tr ? '#1F1F26' : 'transparent', color: l === b.tr ? '#EDEDF0' : '#8A8A96'
+        }))
+      };
+    });
+    const cur = scenes.find((s) => s.id === sel) || scenes[0];
+    const words = cur.text.split(' ');
+    const cap = { before: words.slice(0, 2).join(' '), hi: words[2] || '', after: words.slice(3, 5).join(' ') };
+    const staleCount = stale.length;
+    return {
+      scenes, cur, cap, playing, paused: !playing,
+      staleCount, hasStale: staleCount > 0, allFresh: staleCount === 0,
+      estimate: staleCount === 0 ? 'nothing to run' : staleCount + (staleCount === 1 ? ' scene' : ' scenes') + ' · $0.00',
+      toggle: () => this.setState((st) => ({ playing: !st.playing })),
+      regen: () => this.setState({ stale: [] }),
+      onNarr: (e) => {
+        const v = e.target.value;
+        this.setState((st) => ({
+          narr: { ...st.narr, [st.sel]: v },
+          stale: st.stale.indexOf(st.sel) >= 0 ? st.stale : st.stale.concat(st.sel)
+        }));
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

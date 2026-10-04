@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foundations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div style="width:1440px;height:900px;padding:56px 64px;background:#0A0A0C;color:#EDEDF0;font-family:'Geist',system-ui,sans-serif;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between">
+    <h1 style="margin:0;font-size:32px;font-weight:600;letter-spacing:-0.025em">Foundations</h1>
+    <span style="font-size:13px;color:#8A8A96">Dark only · one accent · Geist and Geist Mono · no UI library</span>
+  </div>
+
+  <section aria-label="Color" style="display:flex;gap:12px">
+    <sc-for list="{{ colors }}" as="c" hint-placeholder-count="10">
+      <div style="flex:1;min-width:0">
+        <div style="height:72px;border-radius:12px;border:1px solid #26262E;background:{{ c.hex }}"></div>
+        <div style="margin-top:8px;font-size:12px;font-weight:500">{{ c.name }}</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8A8A96">{{ c.hex }}</div>
+      </div>
+    </sc-for>
+  </section>
+
+  <div style="display:flex;gap:56px">
+    <section aria-label="Type" style="flex:1;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:44px;line-height:1.1;font-weight:600;letter-spacing:-0.03em">What should we make?</div>
+      <div style="font-size:32px;font-weight:600;letter-spacing:-0.025em">Providers</div>
+      <div style="font-size:18px">Prompt text and large inputs</div>
+      <div style="font-size:15px;font-weight:500">Section heading, row title</div>
+      <div style="font-size:13px;color:#9A9AA6">Body, helper text and chips at 13 px</div>
+      <div style="font-size:12px;color:#8A8A96">Labels and meta at 12 px</div>
+      <div style="font-family:'Geist Mono',monospace;font-size:12px">0:11 / 0:44 · $0.00 / $0.50</div>
+    </section>
+
+    <section aria-label="Components" style="flex:1;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;height:44px;padding:0 20px;border-radius:12px;background:#FF6A3D;color:#1A0B06;font-size:15px;font-weight:600">Primary</span>
+        <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:10px;border:1px solid #26262E;font-size:14px">Secondary</span>
+        <span style="display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:10px;border:1px solid #26262E;font-size:13px"><span style="color:#8A8A96;margin-right:8px">Format</span>9:16</span>
+        <span style="display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;border:1px solid #1F1F26;font-size:13px;color:#9A9AA6">Suggestion</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;background:#16301F;font-size:11px;font-weight:500;color:#5BD68A"><span style="width:6px;height:6px;border-radius:50%;background:#5BD68A"></span>Ready</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;background:#33280F;font-size:11px;font-weight:500;color:#F5B544"><span style="width:6px;height:6px;border-radius:50%;background:#F5B544"></span>Stale · Failed</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;background:#3A1D12;font-size:11px;font-weight:500;color:#FF6A3D"><span style="width:6px;height:6px;border-radius:50%;background:#FF6A3D"></span>Running</span>
+      </div>
+      <div style="display:inline-flex;align-self:flex-start;padding:3px;border:1px solid #26262E;border-radius:10px;background:#0E0E12">
+        <span style="height:30px;padding:0 14px;display:inline-flex;align-items:center;border-radius:7px;background:#1F1F26;font-size:13px;font-weight:500">Selected</span>
+        <span style="height:30px;padding:0 14px;display:inline-flex;align-items:center;font-size:13px;color:#8A8A96">Segmented</span>
+      </div>
+      <div style="height:38px;padding:0 12px;display:flex;align-items:center;border:1px solid #26262E;border-radius:10px;background:#0E0E12;font-size:13px;color:#6E6E7A;max-width:360px">Input · focus ring is the accent</div>
+      <div style="display:flex;gap:16px;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:6px;height:6px;border-radius:2px;background:#EDEDF0"></div><span style="font-size:11px;color:#8A8A96">6</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:40px;height:40px;border-radius:10px;border:1px solid #3A3A46"></div><span style="font-size:11px;color:#8A8A96">10 input</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:40px;height:40px;border-radius:14px;border:1px solid #3A3A46"></div><span style="font-size:11px;color:#8A8A96">14 card</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:40px;height:40px;border-radius:20px;border:1px solid #3A3A46"></div><span style="font-size:11px;color:#8A8A96">20 prompt</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div style="width:40px;height:22px;border-radius:999px;border:1px solid #3A3A46"></div><span style="font-size:11px;color:#8A8A96">pill</span></div>
+      </div>
+    </section>
+
+    <section aria-label="Tailwind tokens" style="flex:1">
+      <div style="font-size:12px;color:#8A8A96;margin-bottom:8px">Tailwind v4 theme, in web/src/index.css</div>
+      <pre style="margin:0;padding:16px;border:1px solid #26262E;border-radius:12px;background:#0E0E12;font-family:'Geist Mono',monospace;font-size:11.5px;line-height:1.65;color:#C4C4CE;white-space:pre-wrap">@theme {
+  --color-bg: #0A0A0C;
+  --color-surface: #121216;
+  --color-raised: #1A1A20;
+  --color-line: #26262E;
+  --color-text: #EDEDF0;
+  --color-muted: #9A9AA6;
+  --color-label: #8A8A96;
+  --color-accent: #FF6A3D;
+  --color-ok: #5BD68A;
+  --color-warn: #F5B544;
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", monospace;
+}</pre>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      colors: [
+        { name: 'bg', hex: '#0A0A0C' }, { name: 'surface', hex: '#121216' }, { name: 'raised', hex: '#1A1A20' },
+        { name: 'line', hex: '#26262E' }, { name: 'text', hex: '#EDEDF0' }, { name: 'muted', hex: '#9A9AA6' },
+        { name: 'label', hex: '#8A8A96' }, { name: 'accent', hex: '#FF6A3D' }, { name: 'ok', hex: '#5BD68A' },
+        { name: 'warn', hex: '#F5B544' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Create</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+*{box-sizing:border-box}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.hv:hover{background:#1A1A20 !important}
+.pb:hover{filter:brightness(1.08)}
+.card:focus-within{border-color:#FF6A3D !important}
+.pc:hover .th{border-color:#3A3A46 !important}
+:focus-visible{outline:2px solid #FF6A3D;outline-offset:2px}
+textarea::placeholder{color:#6E6E7A}
+</style>
+</helmet>
+<div style="display:flex;min-height:900px;background:#0A0A0C;color:#EDEDF0;font-family:'Geist',system-ui,sans-serif">
+  <nav aria-label="Primary" style="width:68px;flex:none;border-right:1px solid #1C1C22;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 0">
+    <a href="Main.dc.html" aria-label="Retake home" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <span style="width:14px;height:14px;border-radius:50%;background:#FF6A3D;box-shadow:0 0 0 5px rgba(255,106,61,0.16)"></span>
+    </a>
+    <a href="Main.dc.html" aria-label="Create" aria-current="page" class="hv" style="width:44px;height:44px;border-radius:12px;background:#1A1A20;color:#FF6A3D;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17v4M17 19h4" /></svg>
+    </a>
+    <a href="Result.dc.html" aria-label="Projects" class="hv" style="width:44px;height:44px;border-radius:12px;color:#9A9AA6;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+    </a>
+    <a href="Providers.dc.html" aria-label="Providers" class="hv" style="width:44px;height:44px;border-radius:12px;color:#9A9AA6;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></svg>
+    </a>
+  </nav>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="height:64px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 32px">
+      <span style="font-size:15px;font-weight:600;letter-spacing:-0.01em">Retake</span>
+      <a href="Providers.dc.html" class="hv" style="display:inline-flex;align-items:center;gap:10px;height:36px;padding:0 14px;border:1px solid #26262E;border-radius:999px;font-size:13px;color:#C4C4CE">
+        <span style="width:7px;height:7px;border-radius:50%;background:#5BD68A"></span>
+        <span>free profile</span>
+        <span style="color:#8A8A96;font-family:'Geist Mono',monospace;font-size:12px">$0.00 / $0.50</span>
+      </a>
+    </header>
+
+    <div style="flex:1;width:100%;max-width:880px;margin:0 auto;padding:56px 32px 64px">
+      <h1 style="margin:0;font-size:44px;line-height:1.1;font-weight:600;letter-spacing:-0.03em;text-align:center">What should we make?</h1>
+      <p style="margin:14px 0 0;text-align:center;font-size:16px;color:#9A9AA6;line-height:1.5">Describe a video. Retake writes it, finds the footage, voices it and renders it.</p>
+
+      <div class="card" style="margin-top:36px;background:#121216;border:1px solid #26262E;border-radius:20px;padding:20px 20px 16px">
+        <label for="prompt" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Video prompt</label>
+        <textarea id="prompt" rows="3" placeholder="A 45-second explainer on why we dream. Calm tone, night-sky footage, simple language." style="width:100%;resize:none;background:transparent;border:0;outline:0;color:#EDEDF0;font:400 18px/1.55 'Geist',system-ui,sans-serif;padding:0"></textarea>
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+          <sc-for list="{{ options }}" as="o" hint-placeholder-count="5">
+            <button type="button" class="hv" style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid #26262E;border-radius:10px;background:transparent;font-size:13px">
+              <span style="color:#8A8A96">{{ o.label }}</span>
+              <span style="font-weight:500">{{ o.value }}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            </button>
+          </sc-for>
+          <span style="flex:1"></span>
+          <a href="Progress.dc.html" class="pb" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:12px;background:#FF6A3D;color:#1A0B06;font-size:15px;font-weight:600">
+            Generate
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </a>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px">
+        <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="5">
+          <button type="button" class="hv" style="height:34px;padding:0 14px;border:1px solid #1F1F26;border-radius:999px;background:transparent;font-size:13px;color:#9A9AA6">{{ i }}</button>
+        </sc-for>
+      </div>
+
+      <section aria-labelledby="recent" style="margin-top:64px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <h2 id="recent" style="margin:0;font-size:15px;font-weight:600">Recent</h2>
+          <a href="Result.dc.html" style="font-size:13px;color:#8A8A96">View all</a>
+        </div>
+        <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:20px">
+          <sc-for list="{{ projects }}" as="p" hint-placeholder-count="4">
+            <a href="Result.dc.html" class="pc" style="display:block;width:176px">
+              <div class="th" style="position:relative;width:176px;height:312px;border-radius:14px;border:1px solid #26262E;overflow:hidden;background:{{ p.tone }}">
+                <span style="position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;background:rgba(10,10,12,0.72);font-size:11px;font-weight:500;color:{{ p.badgeColor }}">
+                  <span style="width:6px;height:6px;border-radius:50%;background:{{ p.badgeColor }}"></span>{{ p.badge }}
+                </span>
+                <span style="position:absolute;right:10px;bottom:10px;height:22px;padding:0 8px;display:inline-flex;align-items:center;border-radius:6px;background:rgba(10,10,12,0.72);font-family:'Geist Mono',monospace;font-size:11px">{{ p.length }}</span>
+              </div>
+              <div style="margin-top:10px;font-size:14px;font-weight:500;line-height:1.3">{{ p.title }}</div>
+              <div style="margin-top:2px;font-size:12px;color:#8A8A96">{{ p.meta }}</div>
+            </a>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      options: [
+        { label: 'Format', value: '9:16' },
+        { label: 'Length', value: '45 s' },
+        { label: 'Voice', value: 'Heart' },
+        { label: 'Captions', value: 'Word highlight' },
+        { label: 'Music', value: 'Calm' }
+      ],
+      ideas: ['Explainer', 'Top 5 facts', 'Story time', 'Product promo', 'News recap'],
+      projects: [
+        { title: 'Why we dream', meta: '5 scenes · just now', length: '0:44', tone: '#1B2433', badge: 'Ready', badgeColor: '#5BD68A' },
+        { title: 'Octopus facts', meta: '6 scenes · yesterday', length: '0:38', tone: '#2A1F1B', badge: 'Ready', badgeColor: '#5BD68A' },
+        { title: 'Coffee in 40 seconds', meta: '4 scenes · 3 days ago', length: '0:41', tone: '#2B2616', badge: 'Ready', badgeColor: '#5BD68A' },
+        { title: 'Why the sky is blue', meta: 'Stopped at voice-over', length: '0:00', tone: '#172A27', badge: 'Failed', badgeColor: '#F5B544' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

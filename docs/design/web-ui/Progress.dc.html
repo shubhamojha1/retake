@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Progress</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+*{box-sizing:border-box}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.hv:hover{background:#1A1A20 !important}
+.pb:hover{filter:brightness(1.08)}
+:focus-visible{outline:2px solid #FF6A3D;outline-offset:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+.spin{animation:spin 0.9s linear infinite;transform-origin:center}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.spin,.pulse{animation:none}}
+</style>
+</helmet>
+<div style="display:flex;min-height:900px;background:#0A0A0C;color:#EDEDF0;font-family:'Geist',system-ui,sans-serif">
+  <nav aria-label="Primary" style="width:68px;flex:none;border-right:1px solid #1C1C22;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 0">
+    <a href="Main.dc.html" aria-label="Retake home" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <span style="width:14px;height:14px;border-radius:50%;background:#FF6A3D;box-shadow:0 0 0 5px rgba(255,106,61,0.16)"></span>
+    </a>
+    <a href="Main.dc.html" aria-label="Create" aria-current="page" class="hv" style="width:44px;height:44px;border-radius:12px;background:#1A1A20;color:#FF6A3D;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17v4M17 19h4" /></svg>
+    </a>
+    <a href="Result.dc.html" aria-label="Projects" class="hv" style="width:44px;height:44px;border-radius:12px;color:#9A9AA6;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+    </a>
+    <a href="Providers.dc.html" aria-label="Providers" class="hv" style="width:44px;height:44px;border-radius:12px;color:#9A9AA6;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></svg>
+    </a>
+  </nav>
+
+  <main style="flex:1;min-width:0;padding:48px 40px 56px">
+    <div style="max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+      <section aria-labelledby="ttl" style="flex:1 1 480px;min-width:0">
+        <div style="font-size:13px;color:#8A8A96">Generating</div>
+        <h1 id="ttl" style="margin:6px 0 0;font-size:32px;line-height:1.15;font-weight:600;letter-spacing:-0.025em">Why we dream</h1>
+        <p style="margin:10px 0 0;font-size:14px;color:#9A9AA6;line-height:1.5">A 45-second explainer on why we dream. Calm tone, night-sky footage, simple language.</p>
+
+        <ol style="list-style:none;margin:32px 0 0;padding:0;border:1px solid #1F1F26;border-radius:16px;background:#0E0E12">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+            <li style="display:flex;gap:16px;padding:18px 20px;border-top:1px solid #1F1F26">
+              <div style="width:24px;height:24px;flex:none;margin-top:1px">
+                <sc-if value="{{ s.done }}" hint-placeholder-val="{{ true }}">
+                  <span style="width:24px;height:24px;border-radius:50%;background:#16301F;color:#5BD68A;display:flex;align-items:center;justify-content:center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-label="Done"><path d="M5 12l5 5 9-10" /></svg>
+                  </span>
+                </sc-if>
+                <sc-if value="{{ s.running }}" hint-placeholder-val="{{ false }}">
+                  <svg class="spin" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-label="Running"><circle cx="12" cy="12" r="9" stroke="#2A2A33" stroke-width="2.5" /><path d="M12 3a9 9 0 0 1 9 9" stroke="#FF6A3D" stroke-width="2.5" stroke-linecap="round" /></svg>
+                </sc-if>
+                <sc-if value="{{ s.queued }}" hint-placeholder-val="{{ false }}">
+                  <span style="display:block;width:24px;height:24px;border-radius:50%;border:2px solid #2A2A33" role="img" aria-label="Queued"></span>
+                </sc-if>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline">
+                  <span style="font-size:15px;font-weight:500;color:{{ s.nameColor }}">{{ s.name }}</span>
+                  <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#8A8A96">{{ s.meta }}</span>
+                </div>
+                <div style="margin-top:3px;font-size:13px;color:#9A9AA6">{{ s.detail }}</div>
+                <sc-if value="{{ s.running }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:12px;height:4px;border-radius:2px;background:#1F1F26;overflow:hidden">
+                    <div style="height:100%;border-radius:2px;background:#FF6A3D;width:{{ s.pct }}%"></div>
+                  </div>
+                </sc-if>
+              </div>
+            </li>
+          </sc-for>
+        </ol>
+
+        <div style="margin-top:20px;display:flex;flex-wrap:wrap;align-items:center;gap:20px;justify-content:space-between">
+          <div style="flex:1 1 220px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#8A8A96"><span>Spent</span><span style="font-family:'Geist Mono',monospace">$0.00 of $0.50 cap</span></div>
+            <div style="margin-top:8px;height:4px;border-radius:2px;background:#1F1F26"><div style="width:2%;height:100%;border-radius:2px;background:#5BD68A"></div></div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <a href="Main.dc.html" class="hv" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border:1px solid #26262E;border-radius:10px;font-size:14px">Cancel</a>
+            <a href="Result.dc.html" class="pb" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:10px;background:#FF6A3D;color:#1A0B06;font-size:14px;font-weight:600">Preview result</a>
+          </div>
+        </div>
+        <p style="margin:20px 0 0;font-size:12px;color:#8A8A96;line-height:1.5">Every provider call is cached by its request. Running the same prompt again reuses the script, clips and voice-over at no cost.</p>
+      </section>
+
+      <aside aria-labelledby="scr" style="flex:1 1 340px;min-width:0;max-width:440px">
+        <h2 id="scr" style="margin:0 0 14px;font-size:15px;font-weight:600">Script</h2>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ scenes }}" as="c" hint-placeholder-count="5">
+            <div style="display:flex;gap:14px;padding:14px;border:1px solid #1F1F26;border-radius:14px;background:#121216;opacity:{{ c.opacity }}">
+              <div style="width:44px;height:78px;flex:none;border-radius:8px;background:{{ c.tone }}"></div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#8A8A96">
+                  <span>Scene {{ c.n }}</span>
+                  <span style="font-family:'Geist Mono',monospace">{{ c.len }}</span>
+                </div>
+                <div style="margin-top:6px;font-size:13px;line-height:1.45;color:#D4D4DC">{{ c.text }}</div>
+                <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+                  <span style="height:20px;padding:0 8px;display:inline-flex;align-items:center;border-radius:6px;background:#1A1A20;font-size:11px;color:#9A9AA6">{{ c.term }}</span>
+                  <span style="height:20px;padding:0 8px;display:inline-flex;align-items:center;border-radius:6px;background:#1A1A20;font-size:11px;color:{{ c.voiceColor }}">{{ c.voice }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const steps = [
+      { name: 'Script', detail: 'Groq wrote 5 scenes for a 45 s target', meta: '2.1 s · $0.00', done: true },
+      { name: 'Footage', detail: 'Pexels · 5 of 5 clips matched', meta: '6.4 s · $0.00', done: true },
+      { name: 'Voice-over', detail: 'Kokoro (local) · scene 3 of 5', meta: '$0.00', running: true, pct: 60 },
+      { name: 'Word timing', detail: 'Groq Whisper · waiting for voice-over', meta: '', queued: true },
+      { name: 'Render', detail: '1080 × 1920 · 30 fps · Retake renderer', meta: '', queued: true }
+    ].map(s => ({
+      done: false, running: false, queued: false, pct: 0, ...s,
+      nameColor: s.queued ? '#8A8A96' : '#EDEDF0'
+    }));
+    const raw = [
+      ['Every night, your brain builds a whole world, then forgets most of it.', '0:07', '#1B2433', 'night city', 'voice ready', true],
+      ['Scientists still argue about why. One idea says dreams help sort the day’s memories.', '0:08', '#2A1F1B', 'brain illustration', 'voice ready', true],
+      ['Another says they let the brain rehearse for threats and surprises.', '0:09', '#172A27', 'forest night', 'voicing…', false],
+      ['A third idea: dreams are just noise the sleeping mind tries to make sense of.', '0:11', '#2B2616', 'abstract light', 'waiting', false],
+      ['Whatever the reason, tonight your brain will do it again. Follow for more.', '0:09', '#271B2E', 'moon clouds', 'waiting', false]
+    ];
+    const scenes = raw.map((r, i) => ({
+      n: i + 1, text: r[0], len: r[1], tone: r[2], term: r[3], voice: r[4],
+      voiceColor: r[5] ? '#5BD68A' : (r[4] === 'voicing…' ? '#FF6A3D' : '#8A8A96'),
+      opacity: i > 2 ? 0.6 : 1
+    }));
+    return { steps, scenes };
+  }
+}
+</script>
+</body>
+</html>

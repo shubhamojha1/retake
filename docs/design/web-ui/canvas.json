@@ -1,0 +1,22 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-04T12:00:00Z" },
+  "title": "Retake UI",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 900, "title": "1 · Create", "expand": "fill", "is_interactive": true },
+    "Progress.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 900, "title": "2 · Progress", "expand": "fill", "is_interactive": true },
+    "Result.dc.html": { "x": 0, "y": 1260, "w": 1440, "h": 900, "title": "3 · Result", "expand": "fill", "is_interactive": true },
+    "Providers.dc.html": { "x": 1520, "y": 1260, "w": 1440, "h": 900, "title": "4 · Providers (read-only)", "expand": "fill", "is_interactive": true },
+    "Editor.dc.html": { "x": 0, "y": 2520, "w": 1440, "h": 900, "title": "5 · Scene editor (Phase 2 preview)", "expand": "fill", "is_interactive": true },
+    "Foundations.dc.html": { "x": 1520, "y": 2520, "w": 1440, "h": 900, "title": "Foundations" }
+  },
+  "order": ["Main.dc.html", "Progress.dc.html", "Result.dc.html", "Providers.dc.html", "Editor.dc.html", "Foundations.dc.html"],
+  "notes": {
+    "t1": { "x": 0, "y": -300, "text": "Phase 1 · Prompt to progress", "kind": "title1", "maxW": 2960 },
+    "t2": { "x": 0, "y": 960, "text": "Phase 1 · Result and providers", "kind": "title1", "maxW": 2960 },
+    "t3": { "x": 0, "y": 2220, "text": "Phase 2 preview and design foundations", "kind": "title1", "maxW": 2960 }
+  },
+  "designSystems": []
+}

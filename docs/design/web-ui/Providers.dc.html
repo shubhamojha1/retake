@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Providers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0C}
+*{box-sizing:border-box}
+a{color:inherit;text-decoration:none}
+.hv:hover{background:#1A1A20 !important}
+:focus-visible{outline:2px solid #FF6A3D;outline-offset:2px}
+</style>
+</helmet>
+<div style="display:flex;min-height:900px;background:#0A0A0C;color:#EDEDF0;font-family:'Geist',system-ui,sans-serif">
+  <nav aria-label="Primary" style="width:68px;flex:none;border-right:1px solid #1C1C22;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 0">
+    <a href="Main.dc.html" aria-label="Retake home" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <span style="width:14px;height:14px;border-radius:50%;background:#FF6A3D;box-shadow:0 0 0 5px rgba(255,106,61,0.16)"></span>
+    </a>
+    <a href="Main.dc.html" aria-label="Create" class="hv" style="width:44px;height:44px;border-radius:12px;color:#9A9AA6;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17v4M17 19h4" /></svg>
+    </a>
+    <a href="Result.dc.html" aria-label="Projects" class="hv" style="width:44px;height:44px;border-radius:12px;color:#9A9AA6;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+    </a>
+    <a href="Providers.dc.html" aria-label="Providers" aria-current="page" class="hv" style="width:44px;height:44px;border-radius:12px;background:#1A1A20;color:#FF6A3D;display:flex;align-items:center;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></svg>
+    </a>
+  </nav>
+
+  <main style="flex:1;min-width:0;padding:48px 40px 56px">
+    <div style="max-width:1120px;margin:0 auto">
+      <h1 style="margin:0;font-size:32px;line-height:1.15;font-weight:600;letter-spacing:-0.025em">Providers</h1>
+      <p style="margin:10px 0 0;max-width:620px;font-size:14px;line-height:1.55;color:#9A9AA6">Each job uses one provider, with fallbacks. Keys are read from environment variables and never stored. To change anything, edit <span style="font-family:'Geist Mono',monospace;font-size:13px;color:#D4D4DC">config/providers.toml</span> and restart the API.</p>
+
+      <div style="margin-top:32px;display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+        <section aria-labelledby="pr" style="flex:2 1 560px;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <h2 id="pr" style="margin:0;font-size:15px;font-weight:600">Active profile</h2>
+            <div role="group" aria-label="Profile" style="display:inline-flex;padding:3px;border:1px solid #26262E;border-radius:10px;background:#0E0E12">
+              <span aria-current="true" style="height:30px;padding:0 14px;display:inline-flex;align-items:center;border-radius:7px;background:#1F1F26;font-size:13px;font-weight:500">free</span>
+              <span style="height:30px;padding:0 14px;display:inline-flex;align-items:center;font-size:13px;color:#8A8A96">dev · offline</span>
+            </div>
+          </div>
+          <div style="margin-top:14px;border:1px solid #1F1F26;border-radius:16px;background:#0E0E12">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:16px 20px;border-top:1px solid #1F1F26">
+                <div style="flex:1 1 200px;min-width:0">
+                  <div style="font-size:12px;color:#8A8A96">{{ r.job }}</div>
+                  <div style="margin-top:3px;font-size:15px;font-weight:500">{{ r.use }}</div>
+                </div>
+                <div style="flex:1 1 140px;font-size:13px;color:#9A9AA6">
+                  <span style="color:#8A8A96">Fallback </span>{{ r.fallback }}
+                </div>
+                <div style="flex:1 1 220px;display:flex;align-items:center;gap:8px;justify-content:flex-end">
+                  <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#9A9AA6">{{ r.env }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:{{ r.bg }};font-size:12px;font-weight:500;color:{{ r.color }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.color }}"></span>{{ r.status }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <aside style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px">
+          <section aria-labelledby="bd" style="padding:20px;border:1px solid #1F1F26;border-radius:16px;background:#121216">
+            <h2 id="bd" style="margin:0;font-size:15px;font-weight:600">Budget</h2>
+            <div style="margin-top:16px">
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#9A9AA6">Per video</span><span style="font-family:'Geist Mono',monospace">$0.00 / $0.50</span></div>
+              <div style="margin-top:8px;height:4px;border-radius:2px;background:#1F1F26"><div style="width:1%;height:100%;border-radius:2px;background:#5BD68A"></div></div>
+            </div>
+            <div style="margin-top:16px">
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#9A9AA6">Today</span><span style="font-family:'Geist Mono',monospace">$0.00 / $2.00</span></div>
+              <div style="margin-top:8px;height:4px;border-radius:2px;background:#1F1F26"><div style="width:1%;height:100%;border-radius:2px;background:#5BD68A"></div></div>
+            </div>
+            <p style="margin:14px 0 0;font-size:12px;line-height:1.5;color:#8A8A96">Hard stops. A paid provider configured by mistake halts the job instead of spending.</p>
+          </section>
+          <section aria-labelledby="ca" style="padding:20px;border:1px solid #1F1F26;border-radius:16px;background:#121216">
+            <h2 id="ca" style="margin:0;font-size:15px;font-weight:600">Cache and storage</h2>
+            <dl style="margin:14px 0 0;display:grid;grid-template-columns:auto 1fr;gap:10px 16px;font-size:13px">
+              <dt style="color:#8A8A96">Request cache</dt><dd style="margin:0;text-align:right">On</dd>
+              <dt style="color:#8A8A96">Cache path</dt><dd style="margin:0;text-align:right;font-family:'Geist Mono',monospace;font-size:12px">./.retake/cache</dd>
+              <dt style="color:#8A8A96">Storage</dt><dd style="margin:0;text-align:right">Local</dd>
+              <dt style="color:#8A8A96">Store path</dt><dd style="margin:0;text-align:right;font-family:'Geist Mono',monospace;font-size:12px">./.retake/store</dd>
+            </dl>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ok = { status: 'Ready', color: '#5BD68A', bg: '#16301F' };
+    const miss = { status: 'Key missing', color: '#F5B544', bg: '#33280F' };
+    return {
+      rows: [
+        { job: 'Script · LLM', use: 'Groq', fallback: 'Ollama', env: 'GROQ_API_KEY', ...ok },
+        { job: 'Voice-over · TTS', use: 'Kokoro (local)', fallback: 'none', env: 'no key needed', ...ok },
+        { job: 'Word timing · STT', use: 'Groq Whisper', fallback: 'Whisper (local)', env: 'GROQ_API_KEY', ...ok },
+        { job: 'Footage · Stock', use: 'Pexels', fallback: 'Pixabay', env: 'PEXELS_API_KEY', ...miss },
+        { job: 'Music', use: 'Bundled library', fallback: 'none', env: 'no key needed', ...ok }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
