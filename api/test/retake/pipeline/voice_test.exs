@@ -75,7 +75,11 @@ defmodule Retake.Pipeline.VoiceTest do
        {:json, %{"language" => "english", "duration_ms" => 2000, "text" => "", "words" => words}},
        %{}}
 
-  @hello [word("Hello", 100, 500), word("there", 600, 900), word("world.", 1000, 1500)]
+  @hello [
+    %{"text" => "Hello", "start_ms" => 100, "end_ms" => 500},
+    %{"text" => "there", "start_ms" => 600, "end_ms" => 900},
+    %{"text" => "world.", "start_ms" => 1000, "end_ms" => 1500}
+  ]
 
   # tts: audio of `audio_ms`; stt: `words`. Each answer may also be a result tuple.
   defp serve(tts \\ nil, stt \\ nil) do

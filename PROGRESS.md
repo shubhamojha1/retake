@@ -255,3 +255,34 @@ Left open:
   photo is upscaled in the render.
 - Landscape clips are cropped to portrait by cover fit.
 - Downloads count against the rate limit like searches (D22).
+
+## F12. Voice and timing (passing, 2026-10-04)
+
+`Retake.Pipeline.Voice.generate(client, scene, opts)`: narration (whitespace
+collapsed) to speech (WAV, stored and cached), duration read from the WAV header
+(`Retake.Media.Wav`, pure Elixir, handles extra chunks, odd padding and streamed
+headers), the stored audio transcribed with word timestamps, words tidied for the
+spec (sorted, non-overlapping, at least 1 ms, none past the audio), scene length =
+offset (300 ms) + audio + padding (500 ms). Unusable replies (no audio, not a WAV,
+too long for a 30 s scene, empty transcript) are never cached. Returns a spec audio
+asset, the scene's `voiceover` (without its asset id), the scene duration and warnings
+(transcript far from the narration's word count).
+
+Adapters: `openai_compatible_speech` (Kokoro, OpenAI) and
+`openai_compatible_transcription` (Groq Whisper, multipart upload, `verbose_json` word
+timestamps). Two additions to the provider layer: the optional `normalize_request/2`
+adapter callback (defaults such as voice and speed enter the request, so the cache key
+and provenance include them), and the optional `call/4` (an adapter that must read a
+stored file gets `%{storage: storage}`; the request names the audio by its
+content-addressed `store://` uri). `mix retake.voice` / `just voice` and `just kokoro`
+(Kokoro-FastAPI CPU image on :8880 in Docker) run it for real.
+
+Tests: 4 normalisation + 18 speech adapter + 14 WAV + 24 transcription adapter + 22
+voice step, written with the code. Verified for real by the user: Kokoro spoke the
+text, the words in the WAV were audible and timed.
+
+Left open:
+- The transcript's timings are Whisper's, not aligned to the script text.
+- Asset provenance records the speech call only, not the transcription.
+- Groq's free transcription limit (about 15 requests a minute) will bite a long video:
+  F13 should wait out a short rate limit instead of failing.

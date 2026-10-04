@@ -2,8 +2,8 @@
   "phase": 1,
   "states": ["not_started", "active", "blocked", "passing"],
   "rule": "Work on one feature at a time. A feature moves to passing only when its verification command succeeds. Verification commands are proposals; finalise each one before starting the feature.",
-  "order": "F00 > F01 > F02 > F03 > F05a > F08 > F09 > F07 > F10 > F11 > F12 > F13 > F14 > F04 > F05b > F06 > F15",
-  "order_note": "Reordered 2026-10-04: first goal is prompt-to-video end to end, quality second. F04 (transitions/captions), F05b (music/ducking/loudness) and F06 (determinism) move after the pipeline and web MVP.",
+  "order": "F00 > F01 > F02 > F03 > F05a > F08 > F09 > F07 > F10 > F11 > F12 > F13 > F16 > F17 > F14 > F04 > F05b > F06 > F15",
+  "order_note": "Reordered 2026-10-04: first goal is prompt-to-video end to end, quality second. F04 (transitions/captions), F05b (music/ducking/loudness) and F06 (determinism) move after the pipeline and web MVP. Generated visuals (F16 images with motion, F17 video clips) come right after F13, by the user's decision the same day; the roadmap had them in Phase 5.",
   "features": [
     {
       "id": "F00-setup",
@@ -114,13 +114,38 @@
     {
       "id": "F12-step-voice-and-timing",
       "behavior": "TTS each scene's narration, then transcribe it to word timings; set scene durations from voice-over length plus padding.",
-      "verification": "cd api && mix test test/retake/pipeline/voice_test.exs",
-      "state": "not_started"
+      "sub_steps": [
+        "12a openai_compatible_speech adapter, Media.Wav, request normalisation hook",
+        "12b openai_compatible_transcription adapter with a storage context",
+        "12c Pipeline.Voice: speak, read duration, transcribe, tidy words, scene length",
+        "12d mix retake.voice, just voice, just kokoro"
+      ],
+      "verification": "cd api && mix test test/retake/providers test/retake/media test/retake/pipeline",
+      "state": "passing"
     },
     {
       "id": "F13-pipeline-e2e",
-      "behavior": "Prompt in, valid spec and MP4 out. Steps per scene run in parallel; progress events are broadcast; failures report which step and scene. Includes the videos/jobs table (Postgres), POST /api/videos, GET /api/videos/:id and media file serving, and the music pick from a CC0 library with manifest. Plan mode first.",
+      "behavior": "Prompt in, valid spec and MP4 out. Steps per scene run in parallel; progress events are broadcast; failures report which step and scene. Includes the videos/jobs table (Postgres), POST /api/videos, GET /api/videos/:id and media file serving with Range support. Music is not part of F13 (music: null until F05b; no CC0 library yet). A scene with no stock found fails the video, naming step and scene. Scenes join with cuts; captions and overlays are in the spec but rendered later (F04).",
+      "sub_steps": [
+        "13a Pipeline.Assemble: pure spec assembly (ids, durations, Ken Burns, validated)",
+        "13b Pipeline.run: parallel scenes, events, failures with step+scene, rate-limit wait, real render; offline e2e test with a scripted adapter and the real renderer",
+        "13c mix retake.video / just video: first real prompt-to-video run",
+        "13d videos table, Videos context, background Runner, PubSub events",
+        "13e HTTP API: POST /api/videos, GET /api/videos/:id, file with Range"
+      ],
       "verification": "cd api && mix test test/retake/pipeline_test.exs test/retake_web/controllers/video_controller_test.exs",
+      "state": "not_started"
+    },
+    {
+      "id": "F16-generated-images",
+      "behavior": "Scenes can get a generated image instead of stock: the script step also writes a visual prompt per scene (a generation prompt, richer than the stock search phrase); an image capability and adapter (hosted or free image model) behind Retake.Providers.Client; a Visuals step chooses generated or stock per scene from the profile; the image gets the renderer's zoom and pan; provenance source generated, with cost and the prompt; budget caps apply.",
+      "verification": "cd api && mix test test/retake/providers test/retake/pipeline",
+      "state": "not_started"
+    },
+    {
+      "id": "F17-generated-video",
+      "behavior": "Scenes can get a generated video clip: a video capability and an adapter that submits a generation job and polls for the result (hosted API, or a local model if the GPU is free), cached by request hash, with cost estimate before the run and budget caps; a clip shorter than its scene follows the held-last-frame rule (D13).",
+      "verification": "cd api && mix test test/retake/providers test/retake/pipeline",
       "state": "not_started"
     },
     {
