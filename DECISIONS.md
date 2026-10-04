@@ -134,3 +134,15 @@ integrity check (`Storage.verify`). The extension is kept because some readers
 (`[a-z0-9]{1,8}`) and uris are parsed strictly, so no path can escape the root.
 Writes go to a temp file and are renamed into place.
 **Cost:** the same bytes with a different extension are two entries.
+
+## D21. Pipeline steps call providers only through `Retake.Providers.Client`, and a reply is validated before it is cached
+`Client.call/4` resolves the providers, looks in the request cache for each in turn,
+calls them with fallbacks, rate limits and the budget, and stores the answer with its
+provenance. Its `:validate` option runs on every fresh answer before storing: a reply
+that fails counts as that provider failing and is never cached. Otherwise a malformed
+LLM reply would be served from the cache on every retry. The script step retries a
+rejected reply with the errors spelled out, up to 3 attempts; a retry is a different
+request, so it has its own cache entry.
+**Cost:** a brief whose first reply is always invalid pays for a failed call each run
+(the good retry is cached under the retry's request, not the original); an invalid
+answer is not charged to the budget even though it cost tokens.
