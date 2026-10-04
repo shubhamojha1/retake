@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Pre-commit: the quick checks from `just check`, so a commit cannot fail CI on formatting or
+# the boundary rules. Slow checks (clippy, fixtures, tests) are left to `just check` / `just test`
+# and CI. Turned on by `just hooks` (part of `just setup`). Skip once: git commit --no-verify
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+staged_has() { grep -qE "$1" <<<"$staged"; }
+
+need() {
+  command -v "$1" >/dev/null || {
+    echo "pre-commit: '$1' not found. Enter the Nix shell (nix develop --impure, or direnv allow)," >&2
+    echo "            or skip the checks once with: git commit --no-verify" >&2
+    exit 1
+  }
+}
+
+fail() {
+  echo "pre-commit: $1" >&2
+  exit 1
+}
+
+# Always: a grep, instant (AGENTS.md rules 5, 8, 9).
+bash scripts/check-boundaries.sh || fail "pipeline code must not use adapters or HTTP clients directly"
+
+# ponytail: these check the working tree, not the index, so a half-staged file is checked as saved.
+if staged_has '^api/.*\.exs?$'; then
+  need mix
+  (cd api && mix format --check-formatted) || fail "run 'cd api && mix format', then git add the files"
+fi
+
+if staged_has '\.rs$|(^|/)Cargo\.(toml|lock)$'; then
+  need cargo
+  cargo fmt --all --check || fail "run 'cargo fmt --all', then git add the files"
+fi
+
+if staged_has '^web/.*\.(ts|tsx)$'; then
+  need npm
+  (cd web && npm run --silent typecheck) || fail "fix the type errors above"
+fi

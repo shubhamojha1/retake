@@ -56,11 +56,16 @@ pg-status:
 # --- setup -----------------------------------------------------------------
 
 # One-shot: install web deps, fetch Rust crates, set up the API + database.
-setup: pg-start
+setup: pg-start hooks
     cd web && npm ci
     cargo fetch --locked
     cd api && mix setup
     test -f config/providers.toml || { cp config/providers.example.toml config/providers.toml; echo "created config/providers.toml (git-ignored): export GROQ_API_KEY and PEXELS_API_KEY to use it"; }
+
+# Use the repo's git hooks (.githooks/pre-commit: format and boundary checks). Local to this clone.
+hooks:
+    chmod +x .githooks/pre-commit
+    git config core.hooksPath .githooks
 
 # --- dev -------------------------------------------------------------------
 
