@@ -20,4 +20,14 @@ defmodule Retake.Providers.Adapter do
 
   @callback call(provider :: Provider.t(), api_key :: String.t() | nil, request :: map()) ::
               {:ok, output(), usage()} | {:error, term()}
+
+  @doc """
+  Optional. Fills in what the request leaves out from the provider's own settings (a
+  voice, a speed). The result is what gets sent, and what the cache key and the asset's
+  provenance are made from, so changing a setting changes the key instead of silently
+  serving an answer made with the old one. Must be pure and idempotent.
+  """
+  @callback normalize_request(provider :: Provider.t(), request :: map()) :: map()
+
+  @optional_callbacks normalize_request: 2
 end

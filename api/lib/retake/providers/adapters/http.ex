@@ -42,7 +42,14 @@ defmodule Retake.Providers.Adapters.Http do
     message |> redact(api_key) |> truncate()
   end
 
-  def message(body, api_key) when is_binary(body), do: body |> redact(api_key) |> truncate()
+  def message(body, api_key) when is_binary(body) do
+    # A body the caller did not decode (a download, an audio reply) may still be a JSON error.
+    case Jason.decode(body) do
+      {:ok, %{"error" => _} = decoded} -> message(decoded, api_key)
+      _ -> body |> redact(api_key) |> truncate()
+    end
+  end
+
   def message(body, api_key), do: body |> inspect() |> redact(api_key) |> truncate()
 
   @doc false

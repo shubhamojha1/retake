@@ -5,11 +5,19 @@ defmodule Retake.Test.FakeAdapter do
   `Process.put(:fake_adapter_answers, %{"provider name" => answer})`, where an
   answer is a result tuple or a one-argument function of the request.
 
+  A provider setting `request_defaults` (a table in the TOML) is merged under every
+  request, like a real adapter filling in a voice or a speed.
+
   Adapters run in the calling process, so each (async) test has its own answers.
   An unanswered call is an error: tests never reach a real provider.
   """
 
   @behaviour Retake.Providers.Adapter
+
+  @impl true
+  def normalize_request(provider, request) do
+    Map.merge(provider.options["request_defaults"] || %{}, request)
+  end
 
   @impl true
   def call(provider, api_key, request) do

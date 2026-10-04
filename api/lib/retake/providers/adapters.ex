@@ -10,6 +10,7 @@ defmodule Retake.Providers.Adapters do
 
   @builtin %{
     "openai_compatible" => Retake.Providers.Adapters.OpenAICompatible,
+    "openai_compatible_speech" => Retake.Providers.Adapters.OpenAICompatibleSpeech,
     "pexels" => Retake.Providers.Adapters.Pexels,
     "pixabay" => Retake.Providers.Adapters.Pixabay
   }

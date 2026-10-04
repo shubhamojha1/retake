@@ -165,7 +165,7 @@ defmodule Retake.Providers.Client do
         {:error, {:unknown_adapter, provider.adapter}}
 
       {:ok, adapter} ->
-        with {:ok, output, usage} <- adapter.call(provider, key, request),
+        with {:ok, output, usage} <- adapter.call(provider, key, effective(provider, request)),
              :ok <- validate_output(validate, output) do
           {:ok, output, usage}
         end
@@ -181,12 +181,24 @@ defmodule Retake.Providers.Client do
     end
   end
 
+  # The request as this provider will actually receive it: its adapter may fill in defaults
+  # from the provider's settings (`Retake.Providers.Adapter.normalize_request/2`).
+  defp effective(provider, request) do
+    with {:ok, adapter} <- Adapters.fetch(provider.adapter),
+         true <-
+           Code.ensure_loaded?(adapter) and function_exported?(adapter, :normalize_request, 2) do
+      adapter.normalize_request(provider, request)
+    else
+      _ -> request
+    end
+  end
+
   defp parts(provider, capability, request) do
     %{
       capability: capability,
       provider: provider.name,
       model: to_string(provider.options["model"] || ""),
-      request: request
+      request: effective(provider, request)
     }
   end
 
