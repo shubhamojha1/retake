@@ -54,7 +54,12 @@ defmodule Retake.Pipeline.Script do
           visual_query: String.t(),
           on_screen_text: String.t() | nil
         }
-  @type script :: %{title: String.t(), scenes: [scene()], warnings: [String.t()]}
+  @type script :: %{
+          title: String.t(),
+          scenes: [scene()],
+          warnings: [String.t()],
+          cached: boolean()
+        }
 
   @doc """
   Writes the script for `brief`: `%{prompt: ..}` plus optional `:target_duration_ms`
@@ -63,7 +68,8 @@ defmodule Retake.Pipeline.Script do
   Returns `{:ok, script}`, `{:error, {:invalid_brief, reasons}}`,
   `{:error, {:script_invalid, %{attempts: n, errors: reasons}}}` when the model never
   produced a usable reply, or the provider error from `Retake.Providers.Client`.
-  `warnings` lists soft problems (for example a script far too short for the target).
+  `warnings` lists soft problems (for example a script far too short for the target);
+  `cached` is true when the reply came from the request cache, not a provider.
   """
   @spec generate(Client.t(), map(), keyword()) :: {:ok, script()} | {:error, term()}
   def generate(%Client{} = client, brief, opts \\ []) do
@@ -82,8 +88,8 @@ defmodule Retake.Pipeline.Script do
     }
 
     case Client.call(client, :llm, request, validate: &validate/1) do
-      {:ok, entry, _outcome} ->
-        finish(entry, brief)
+      {:ok, entry, outcome} ->
+        finish(entry, brief, outcome)
 
       {:error, {:all_providers_failed, attempts} = reason} ->
         case rejected_replies(attempts) do
@@ -124,12 +130,15 @@ defmodule Retake.Pipeline.Script do
     }
   end
 
-  defp finish(entry, brief) do
+  defp finish(entry, brief, outcome) do
     {:json, %{"content" => text}} = entry.result
 
     case parse(text) do
-      {:ok, script} -> {:ok, Map.put(script, :warnings, warnings(script, brief))}
-      {:error, errors} -> {:error, {:script_invalid, %{attempts: 1, errors: errors}}}
+      {:ok, script} ->
+        {:ok, Map.merge(script, %{warnings: warnings(script, brief), cached: outcome == :hit})}
+
+      {:error, errors} ->
+        {:error, {:script_invalid, %{attempts: 1, errors: errors}}}
     end
   end
 

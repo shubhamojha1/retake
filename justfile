@@ -60,6 +60,7 @@ setup: pg-start
     cd web && npm ci
     cargo fetch --locked
     cd api && mix setup
+    test -f config/providers.toml || { cp config/providers.example.toml config/providers.toml; echo "created config/providers.toml (git-ignored): export GROQ_API_KEY and PEXELS_API_KEY to use it"; }
 
 # --- dev -------------------------------------------------------------------
 
@@ -79,6 +80,11 @@ api: pg-start
 # Web dev server only, on http://localhost:5173 (proxies /api -> :4010).
 web:
     cd web && npm run dev
+
+# Write a video script for a topic with the real LLM: `just script "why tea is good for you"`.
+# Needs config/providers.toml and GROQ_API_KEY (see `mix help retake.script` for options).
+script *args:
+    cd api && mix retake.script {{args}}
 
 # Render a spec to .retake/out/<id>.mp4 (release build: debug is far too slow for video).
 render spec:

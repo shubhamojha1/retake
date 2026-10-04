@@ -189,3 +189,34 @@ Left open:
 - Warnings (D14) are returned but nothing surfaces them to users yet (F13/F14).
 - The renderer child processes are not killed explicitly on timeout (they exit
   when their pipes close).
+
+## F10. Script step (passing, 2026-10-04)
+
+`Retake.Providers.Client` (10a): the one call path for pipeline steps. Resolves
+the providers, looks in the request cache for each in turn (a hit costs nothing and
+uses no rate limit), calls through `Providers.run` (fallbacks, limits, budget) via
+the adapter registry, validates before storing (`:validate`; invalid answers are
+never cached, D21), stores with provenance. `Cache.lookup/3` and `store/6` were
+added for it. `Client.from_file/2` builds one from `config/providers.toml`.
+
+`openai_compatible` adapter (10b) on Req: bearer auth, `response_format` per the
+provider's `structured_output`, token usage, structured errors, API key redacted
+from any echoed message (rule 7). Tests use `Req.Test` stubs; an unstubbed request
+raises (rule 6).
+
+`Retake.Pipeline.Script` (10c): brief to title + scenes. Prompt asks for ONLY a
+JSON object, sizes the script from the target length (about 6 s a scene, 2.5
+words/s), parses leniently (markdown fence, chatter), validates against the schema,
+cleans whitespace, retries a rejected reply with the errors spelled out (max 3),
+warns on a script far from the target length. `mix retake.script` / `just script`
+(10d) runs it for real and prints it; `just setup` copies the example config.
+
+Tests: 13 client + 19 adapter + 31 script + 10 from_file, all written before or with
+the code. Real run verified by the user against Groq (`openai/gpt-oss-120b`): two
+topics produced 8-scene scripts and the repeat run was answered from the cache.
+
+Left open:
+- The prompt is a first draft; the user will tune it later.
+- Invalid replies are not charged to the budget (D21).
+- `[cache] enabled = false` in providers.toml is read but not honoured.
+- Some visual queries are abstract ("heart monitor tea"); F11 will show how Pexels copes.

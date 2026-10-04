@@ -146,3 +146,13 @@ request, so it has its own cache entry.
 **Cost:** a brief whose first reply is always invalid pays for a failed call each run
 (the good retry is cached under the retry's request, not the original); an invalid
 answer is not charged to the budget even though it cost tokens.
+
+## D22. Stock footage is two cached provider calls: search, then download
+A stock search returns JSON candidates; the chosen candidate's file is a second call
+that returns bytes into `Retake.Storage`. Both go through `Retake.Providers.Client`,
+so both are cached and rate-limited, and pipeline code never makes an HTTP request.
+The download request carries the query and rank, so the stored asset's provenance
+says how it was found. The adapter only downloads from the stock service's own
+hosts (https, an allowlist), because the URL comes from an API response.
+**Cost:** a download counts against the provider's rate limit like a search does;
+the same file found by two queries is downloaded twice (storage keeps one copy).

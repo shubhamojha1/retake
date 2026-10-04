@@ -56,6 +56,57 @@ defmodule Retake.Providers.Client do
   def new(opts), do: struct!(__MODULE__, opts)
 
   @doc """
+  A client from a providers file (`config/providers.toml`). The storage and cache
+  directories come from its `[storage]` and `[cache]` tables; relative paths are
+  relative to the project root, the directory above the file's own (`config/..`).
+
+  Options: `:profile` (default `RETAKE_PROFILE` from `:env`, else the file's default);
+  `:env`, `:usage`, `:video_id`, `:now` as in `new/1`.
+
+  Returns `{:error, errors}` for an invalid file, `{:error, {:unknown_profile, name}}`
+  or `{:error, {:unsupported_storage_backend, name}}`.
+  """
+  @spec from_file(Path.t(), keyword()) :: {:ok, t()} | {:error, term()}
+  def from_file(path, opts \\ []) do
+    with {:ok, config} <- Config.load(path) do
+      root = path |> Path.expand() |> Path.dirname() |> Path.dirname()
+      profile = Keyword.get(opts, :profile) || Config.profile_name(config, opts[:env])
+
+      with :ok <- check_profile(config, profile),
+           {:ok, storage} <- storage(config, root) do
+        extra = Keyword.take(opts, [:env, :usage, :video_id, :now])
+
+        {:ok,
+         new(
+           [
+             config: config,
+             profile: profile,
+             storage: storage,
+             cache_root: Path.expand(config.cache["root"] || "./.retake/cache", root)
+           ] ++ extra
+         )}
+      end
+    end
+  end
+
+  defp check_profile(config, profile) do
+    if Map.has_key?(config.profiles, profile),
+      do: :ok,
+      else: {:error, {:unknown_profile, profile}}
+  end
+
+  defp storage(config, root) do
+    case config.storage["backend"] || "local" do
+      "local" ->
+        {:ok,
+         Retake.Storage.Local.new(Path.expand(config.storage["root"] || "./.retake/store", root))}
+
+      other ->
+        {:error, {:unsupported_storage_backend, other}}
+    end
+  end
+
+  @doc """
   Makes `request` to the providers for `capability`. Returns `{:ok, entry, :hit | :miss}`
   (`entry.result` is `{:json, term}` or `{:asset, ref}`) or `{:error, reason}`.
 

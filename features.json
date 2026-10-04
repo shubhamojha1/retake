@@ -98,13 +98,18 @@
         "10d mix retake.script for a real run with a Groq key; just setup copies providers.example.toml"
       ],
       "verification": "cd api && mix test test/retake/providers test/retake/pipeline",
-      "state": "active"
+      "state": "passing"
     },
     {
       "id": "F11-step-stock",
-      "behavior": "For each scene, search stock (Pexels) for portrait video or photo, pick the best fit, store it with licence and attribution.",
-      "verification": "cd api && mix test test/retake/pipeline/stock_test.exs",
-      "state": "not_started"
+      "behavior": "For each scene, search stock (Pexels) for portrait video or photo, pick the best fit, store it with licence and attribution. Two calls per scene, both through Retake.Providers.Client and the request cache: a search (JSON candidates) and a download (bytes into Storage). Prefers a video long enough for the narration, else a photo; retries a broader query when nothing is found; records provenance, licence and attribution for the spec asset.",
+      "sub_steps": [
+        "11a pexels adapter on Req (search videos/photos, download with a host allowlist); per-adapter req_options in config",
+        "11b Pipeline.Stock.find: query, rank candidates, download, asset data for the spec",
+        "11c mix retake.stock / just stock for a real run with a Pexels key"
+      ],
+      "verification": "cd api && mix test test/retake/providers test/retake/pipeline",
+      "state": "active"
     },
     {
       "id": "F12-step-voice-and-timing",

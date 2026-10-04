@@ -293,9 +293,12 @@ defmodule Retake.Pipeline.ScriptTest do
       replies([reply(script_json())])
 
       {:ok, first} = Script.generate(client, @brief)
+      assert first.cached == false
       assert length(requests()) == 1
 
-      assert {:ok, ^first} = Script.generate(client, @brief)
+      assert {:ok, second} = Script.generate(client, @brief)
+      assert second.cached == true
+      assert Map.delete(second, :cached) == Map.delete(first, :cached)
       assert requests() == []
     end
   end
