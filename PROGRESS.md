@@ -220,3 +220,38 @@ Left open:
 - Invalid replies are not charged to the budget (D21).
 - `[cache] enabled = false` in providers.toml is read but not honoured.
 - Some visual queries are abstract ("heart monitor tea"); F11 will show how Pexels copes.
+
+## F11. Stock footage step (passing, 2026-10-04)
+
+`Retake.Pipeline.Stock.find(client, scene)`: a scene's `visual_query` becomes a
+stored stock video or photo as a ready spec asset (kind, `store://` uri, content
+hash, media incl. duration for video, licence, attribution, provenance). Two
+cached provider calls (D22): a search, then a download. Videos first, then photos;
+a query with no result is retried with its first two words. Choosing: portrait
+beats landscape, a clip long enough for the narration (words / 2.5 s + 0.5 s, at
+least 3 s) beats a short one, then the provider's order; inside a candidate the
+smallest file at least 1080 on its short side, else the biggest. A short clip is
+used with a warning (last frame held, D13).
+
+Adapters (providers layer): `pexels` and `pixabay` on Req, same request and
+candidate shape so the step works with either; `Adapters.Download` is the shared
+safe download (https only, host allowlist with exact suffix matching, no redirects,
+no credentials, size cap, known media types); `Adapters.Http` shares error handling
+and redacts the API key. Test stubs are per adapter (`req_options` map).
+`mix retake.stock` / `just stock` runs the step for real.
+
+Pexels API key issuance is paused (2026-10-04): the Pexels adapter is tested with
+stubs and skipped at run time without a key; Pixabay answers. Real run verified by
+the user with a Pixabay key: three clips downloaded (one vertical with no audio,
+two landscape). Clip audio is discarded by the renderer by design.
+
+Tests: 24 stock step, 26 Pexels, 18 Pixabay, plus the shared adapter code. One test
+bug found: a one-letter API key garbled the redacted message.
+
+Left open:
+- Stock covers abstract queries loosely ("heart monitor tea"); a generated-visuals
+  provider (AI images + motion) is the planned upgrade, behind the same step.
+- Pixabay photos top out at 1280/1920 px without an approved account, so a vertical
+  photo is upscaled in the render.
+- Landscape clips are cropped to portrait by cover fit.
+- Downloads count against the rate limit like searches (D22).

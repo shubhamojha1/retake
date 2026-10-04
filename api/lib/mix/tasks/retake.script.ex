@@ -27,9 +27,10 @@ defmodule Mix.Tasks.Retake.Script do
 
   use Mix.Task
 
+  alias Retake.CLI
   alias Retake.Pipeline.Script
   alias Retake.Providers
-  alias Retake.Providers.{Client, Usage}
+  alias Retake.Providers.Client
 
   @switches [
     profile: :string,
@@ -51,16 +52,14 @@ defmodule Mix.Tasks.Retake.Script do
       )
     end
 
-    # Load and compile, but do not start the whole app: this needs no database or web server.
     Mix.Task.run("app.config")
-    for app <- [:req, :jsv], do: {:ok, _} = Application.ensure_all_started(app)
-    {:ok, _usage} = Usage.start_link(name: Usage)
+    CLI.start_services()
 
-    path = opts[:config] || Path.expand("../config/providers.toml")
+    path = opts[:config] || CLI.default_config_path()
 
     case Client.from_file(path, profile: opts[:profile]) do
       {:ok, client} -> generate(client, words, opts)
-      {:error, reason} -> Mix.raise(describe(reason, path))
+      {:error, reason} -> Mix.raise(CLI.describe(reason, path))
     end
   end
 
@@ -82,7 +81,7 @@ defmodule Mix.Tasks.Retake.Script do
 
     case Script.generate(client, brief) do
       {:ok, script} -> print(script, opts[:json])
-      {:error, reason} -> Mix.raise(describe(reason, nil))
+      {:error, reason} -> Mix.raise(CLI.describe(reason, nil))
     end
   end
 
@@ -114,59 +113,4 @@ defmodule Mix.Tasks.Retake.Script do
     base = %{"narration" => scene.narration, "visual_query" => scene.visual_query}
     if scene.on_screen_text, do: Map.put(base, "on_screen_text", scene.on_screen_text), else: base
   end
-
-  # --- errors, in words -------------------------------------------------------------------
-
-  defp describe([%{path: _, message: _} | _] = errors, path) do
-    lines = Enum.map_join(errors, "\n", fn e -> "  #{e.path}: #{e.message}" end)
-
-    hint =
-      if path && not File.exists?(path),
-        do:
-          "\nCopy config/providers.example.toml to config/providers.toml (`just setup` does it).",
-        else: ""
-
-    "cannot use #{path}:\n#{lines}#{hint}"
-  end
-
-  defp describe({:unknown_profile, name}, _path), do: "unknown profile #{inspect(name)}"
-
-  defp describe({:invalid_brief, problems}, _path),
-    do: "invalid request: " <> Enum.join(problems, "; ")
-
-  defp describe({:script_invalid, %{attempts: attempts, errors: errors}}, _path) do
-    "the model did not produce a valid script after #{attempts} attempt(s):\n" <>
-      Enum.map_join(errors, "\n", &"  - #{&1}")
-  end
-
-  defp describe({:all_providers_failed, attempts}, _path) do
-    "no provider could answer:\n" <>
-      Enum.map_join(attempts, "\n", fn %{provider: provider, reason: reason} ->
-        "  #{provider}: #{reason(reason)}"
-      end)
-  end
-
-  defp describe({:budget_exceeded, scope}, _path), do: "the #{scope} budget is spent"
-  defp describe(other, _path), do: "failed: #{inspect(other)}"
-
-  defp reason({:missing_env, variable}), do: "no API key: export #{variable}=..."
-  defp reason({:http, status, message}) when status in [401, 403] do
-    "HTTP #{status}: the service rejected the API key (#{message}); check that it is current and exported whole"
-  end
-
-  defp reason({:http, status, message}), do: "HTTP #{status}: #{message}"
-
-  defp reason({:transport, why}),
-    do: "could not reach the service (#{inspect(why)}); is it running?"
-
-  defp reason({:rate_limited, window, ms}),
-    do: "rate limit for the #{window} reached; try again in #{div(ms, 1000)} s"
-
-  defp reason({:bad_provider_config, message}), do: message
-  defp reason({:unknown_adapter, name}), do: "no adapter named #{inspect(name)}"
-
-  defp reason({:invalid_result, %{errors: errors}}),
-    do: "invalid reply: " <> Enum.join(errors, "; ")
-
-  defp reason(other), do: inspect(other)
 end

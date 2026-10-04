@@ -109,7 +109,7 @@
         "11c mix retake.stock / just stock for a real run with a Pexels key"
       ],
       "verification": "cd api && mix test test/retake/providers test/retake/pipeline",
-      "state": "active"
+      "state": "passing"
     },
     {
       "id": "F12-step-voice-and-timing",

@@ -9,7 +9,9 @@ defmodule Retake.Providers.Adapters do
   """
 
   @builtin %{
-    "openai_compatible" => Retake.Providers.Adapters.OpenAICompatible
+    "openai_compatible" => Retake.Providers.Adapters.OpenAICompatible,
+    "pexels" => Retake.Providers.Adapters.Pexels,
+    "pixabay" => Retake.Providers.Adapters.Pixabay
   }
 
   @spec fetch(String.t()) :: {:ok, module()} | :error

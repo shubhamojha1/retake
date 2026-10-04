@@ -86,6 +86,11 @@ web:
 script *args:
     cd api && mix retake.script {{args}}
 
+# Find and download stock footage for a phrase: `just stock "steaming tea cup closeup"`.
+# Needs PIXABAY_API_KEY or PEXELS_API_KEY (see `mix help retake.stock`).
+stock *args:
+    cd api && mix retake.stock {{args}}
+
 # Render a spec to .retake/out/<id>.mp4 (release build: debug is far too slow for video).
 render spec:
     cargo run -q --release -p retake_render -- {{spec}}
