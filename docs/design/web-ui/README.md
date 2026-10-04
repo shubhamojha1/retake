@@ -26,7 +26,7 @@ spacing, copy and states, then rebuild each screen as React components.
 
 | File | Screen | Phase | Notes |
 |---|---|---|---|
-| `Main.dc.html` | Create: prompt box, option chips, idea chips, recent projects | 1 | Core of F14. |
+| `Main.dc.html` | Create: prompt box, option chips, idea chips, recent projects | 1 | Core of F14. Chips: see Wiring. |
 | `Progress.dc.html` | Live pipeline steps, spend vs cap, script building up | 1 | F14: driven by the Channel progress events from F13. |
 | `Result.dc.html` | 9:16 player, read-only scene list, details, Download MP4 | 1 | F14: player and download link. "Edit scenes" is a disabled Phase 2 tag. |
 | `Providers.dc.html` | Read-only profile / provider / key-present status, budgets, cache paths | 1, optional | Needs an API endpoint that does not exist yet (see below). |
@@ -73,30 +73,48 @@ Mono font for all times and money.
 
 ## Wiring to the existing project
 
-Current state: `web/src/App.tsx` is a placeholder; API only has `GET /api/health`.
-Relevant work queue items in `features.json`: **F13** (adds `POST /api/videos`,
-`GET /api/videos/:id`, media serving, Channel progress events) and **F14**
-(web MVP: prompt box, live progress over a Channel, player, download link).
-Vite proxies `/api` and `/socket` to :4010.
+State when this was written (main at "docs: mark F13 passing, add D23"): F13 is
+passing, **F14 (web MVP) is the next feature** and `web/src/App.tsx` is still a
+placeholder. Vite proxies `/api` and `/socket` to :4010.
+
+Backend that exists (`api/lib/retake_web/router.ex`, `video_controller.ex`):
+
+- `POST /api/videos`: body `{prompt, target_duration_ms?, language?, tone?,
+  audience?, profile?}`. Only `prompt` is required. 202 with the job, 422 with
+  `{errors: [...]}`.
+- `GET /api/videos/:id`: status, progress, warnings, error, spec once present.
+- `GET /api/videos`: latest jobs (`?limit=`, default 20, max 100).
+- `GET /api/videos/:id/file`: the MP4 (409 until done), Range supported,
+  `?download=1` for the download link.
+- Progress is broadcast on PubSub topic `video:<id>` (D23). **There is no
+  Phoenix Channel or socket yet**: F14 has to add one that forwards these events
+  to the browser. Until then Progress can poll `GET /api/videos/:id`.
 
 Mapping:
 
-- **Create** → `POST /api/videos` with the prompt and options, then navigate to
-  Progress. Chips map to spec `brief`/output options (format, target duration,
-  voice, captions, music). Chips in the mockup are static; start with only the
-  options the F13 request accepts.
-- **Progress** → subscribe to the video's Channel. Steps shown: script,
-  footage, voice-over, word timing, render. Each step's provider, time and cost
-  come from provenance. Spend bar = running cost vs
-  `budget.max_cost_per_video_usd`. Failures must show which step and scene.
-- **Result** → `GET /api/videos/:id` plus the served MP4 for the player and the
-  download link. Scene list comes from the spec (`intent` narration, visual
-  search terms, resolved asset provenance).
-- **Recent projects** (Create) and **Providers** → no endpoint yet. Add
-  `GET /api/videos` and a read-only providers status endpoint (profile, provider
-  per capability, fallbacks, whether the env var for each key is set, budgets,
-  cache/storage paths) only if you decide they belong in Phase 1. If not, cut
-  the recents grid and the Providers screen for now. Never return key values.
+- **Create** posts to `POST /api/videos`, then goes to Progress for the returned
+  id. Only chips the API accepts should be live: **Length**
+  (`target_duration_ms`) and optionally Tone / Language. Format is fixed 9:16.
+  **Voice, Captions and Music chips are not accepted by the API**: captions are
+  not rendered until F04 and music is `null` until F05b, so hide or disable those
+  chips for F14 rather than faking them.
+- **Progress** shows script, footage, voice-over, word timing, render from the
+  job's `progress` JSON (see `Retake.Videos.Progress`). Spend bar = running cost
+  vs `budget.max_cost_per_video_usd`. A failed job reports the step and scene
+  (`error`), render that state with the warn styling.
+- **Result** uses `/file` for the player (`<video src>`) and
+  `/file?download=1` for Download MP4. The scene list comes from `spec.scenes`
+  on `GET /api/videos/:id`. The mockup preview shows burned-in captions: until
+  F04 the real video has none, so the player simply shows the MP4.
+- **Recent projects** (Create) use `GET /api/videos`. This is available now.
+  The mockup's "Failed" card is a real state (`status: failed`).
+- **Providers**: no endpoint yet. Add a read-only one (profile, provider per
+  capability, fallbacks, whether each env var is set, budgets, cache/storage
+  paths) only if it belongs in Phase 1, otherwise cut that screen for now. Never
+  return key values.
+
+Deviations to expect from the mockups: no music line, no captions, hard cuts
+only, and no per-step cost until provenance is surfaced in the job JSON.
 
 ## Constraints from AGENTS.md that affect the UI
 
