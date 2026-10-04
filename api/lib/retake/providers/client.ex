@@ -75,7 +75,7 @@ defmodule Retake.Providers.Client do
   relative to the project root, the directory above the file's own (`config/..`).
 
   Options: `:profile` (default `RETAKE_PROFILE` from `:env`, else the file's default);
-  `:env`, `:usage`, `:video_id`, `:now` as in `new/1`.
+  `:env`, `:usage`, `:video_id`, `:now`, `:max_wait_ms`, `:sleep` as in `new/1`.
 
   Returns `{:error, errors}` for an invalid file, `{:error, {:unknown_profile, name}}`
   or `{:error, {:unsupported_storage_backend, name}}`.
@@ -88,7 +88,7 @@ defmodule Retake.Providers.Client do
 
       with :ok <- check_profile(config, profile),
            {:ok, storage} <- storage(config, root) do
-        extra = Keyword.take(opts, [:env, :usage, :video_id, :now])
+        extra = Keyword.take(opts, [:env, :usage, :video_id, :now, :max_wait_ms, :sleep])
 
         {:ok,
          new(
