@@ -168,3 +168,18 @@ failed ("the app stopped"): the user asks again, and the request cache makes the
 **Cost:** no job queue, no limit on jobs at once (each job already runs 3 scenes at a time, and the
 providers' rate limits and budget are shared through `Retake.Providers.Usage`), and a restart loses
 the render in progress.
+
+## D24. The web app is plain React with hash routes and a Phoenix channel that pushes whole state
+No UI library, no router, no state library: Tailwind v4 with the design tokens in `index.css`, three pages
+chosen by `#/`, `#/projects`, `#/videos/:id`, and Geist loaded from Google Fonts (the mockups' choice).
+`RetakeWeb.VideoChannel` (`video:<id>`) pushes the whole job after joining and when its status changes
+(`"video"`), and the whole progress map each time the runner writes it (`"progress"`); the page replaces
+what it has and keeps no copy of `Videos.Progress.record/2`. The channel is joined after `join/3` returns,
+so the first snapshot is read in `:after_join` (an event may arrive twice, never be lost). Render progress
+reaches the page only every 5%, like the row. The socket has no authentication: v1 is a single-user,
+self-hosted app, and `/api` has none either. The page shows only what the API can say: no spend bar or
+cost (no cost in the job JSON), no voice, captions or music options (the API takes none), no Cancel
+(there is none), no Providers page (no endpoint).
+**Cost:** the fonts need the network (self-host them to run fully offline); a render bar moves in 5% steps;
+anyone who can reach the server can watch any job; a hash route needs no server setup but is not a
+pretty address.

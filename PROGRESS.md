@@ -321,3 +321,21 @@ Left open:
 
 Quality gaps seen in the first real video (to address later): captions and transitions
 (F04), music and loudness (F05b), better visual matching and generated visuals (F16/F17).
+
+## F14. Web MVP (passing, 2026-10-05)
+
+Built from `docs/design/web-ui`. The user ran the verification (typecheck, node and mix tests,
+the page in a browser) and reported "it works"; the output of each part was not itemised.
+- 14a `/socket` and `RetakeWeb.VideoChannel` (D24); the runner broadcasts
+  `{:video_progress, map}` each time it writes the progress; the script step's `outline`
+  (narration and footage search per scene) is in the progress, so the page can show the script
+  while footage and voices are made. `just dev` and `just api` now build the release renderer
+  and migrate the dev database first (a video could not be rendered, or even queued, without).
+- 14b design tokens, Geist, pure modules in `web/src/lib/` (route, brief, steps, scenes, format,
+  tone) with node tests; `phoenix` client; tsconfig now enforces `import type` and erasable
+  syntax (needed by `node --experimental-strip-types`).
+- 14c screens: Create (prompt, Length and Tone chips, ideas, recent), Generating (live steps,
+  script, a failure with the step and a "Try again"), Result (player, scenes, details, notes,
+  credits, download), Projects.
+  Left out on purpose: Providers page, spend bar and cost, Voice/Captions/Music chips, Cancel.
+- 14d `just e2e-smoke`: the running system, real services, real websocket.

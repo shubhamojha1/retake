@@ -151,8 +151,14 @@
     {
       "id": "F14-web-mvp",
       "behavior": "Web page with a prompt box, live step-by-step progress over a Channel, a video player and a download link.",
-      "verification": "cd web && npm test && just e2e-smoke",
-      "state": "not_started"
+      "sub_steps": [
+        "14a Backend: /socket, VideoChannel (snapshot after join, whole-progress pushes, whole job on status change), runner broadcasts {:video_progress, map}, script outline in the progress; channel tests",
+        "14b Web foundations: design tokens, Geist, pure lib modules (route, brief, steps, scenes, format) with node tests, phoenix client",
+        "14c Screens from docs/design/web-ui: Create (with recent), Generating (steps, script, failure with retry), Result (player, scenes, details, credits, download), Projects. Cut for now: Providers (no endpoint), spend bar and cost (no cost in the job JSON), Voice/Captions/Music chips (the API does not take them), Cancel (no API)",
+        "14d just e2e-smoke: the running system with real services, over the real websocket (not part of just test or CI)"
+      ],
+      "verification": "cd web && npm run typecheck && npm test && cd ../api && mix test test/retake_web test/retake/videos_test.exs test/retake/videos test/retake/pipeline_test.exs && cd .. && just e2e-smoke   (the last needs `just api`, `just kokoro` and the provider keys); then open http://localhost:5173 (`just dev`) and make a video",
+      "state": "passing"
     },
     {
       "id": "F15-phase1-acceptance",
