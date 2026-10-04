@@ -141,7 +141,10 @@ defmodule Retake.Providers.Client do
     {now, now_ms} = clock(client)
 
     run_opts = [env: client.env, usage: client.usage, video_id: client.video_id, now: now_ms]
-    call_adapter = fn provider, key -> call_adapter(provider, key, request, opts[:validate]) end
+
+    call_adapter = fn provider, key ->
+      call_adapter(client, provider, key, request, opts[:validate])
+    end
 
     with {:ok, output, %{provider: name, usage: usage}} <-
            Providers.run(client.config, client.profile, capability, call_adapter, run_opts),
@@ -159,16 +162,26 @@ defmodule Retake.Providers.Client do
     end
   end
 
-  defp call_adapter(%Provider{} = provider, key, request, validate) do
+  defp call_adapter(client, %Provider{} = provider, key, request, validate) do
     case Adapters.fetch(provider.adapter) do
       :error ->
         {:error, {:unknown_adapter, provider.adapter}}
 
       {:ok, adapter} ->
-        with {:ok, output, usage} <- adapter.call(provider, key, effective(provider, request)),
+        with {:ok, output, usage} <-
+               invoke(adapter, client, provider, key, effective(provider, request)),
              :ok <- validate_output(validate, output) do
           {:ok, output, usage}
         end
+    end
+  end
+
+  # An adapter that needs the storage (to read an audio file) defines call/4.
+  defp invoke(adapter, client, provider, key, request) do
+    if Code.ensure_loaded?(adapter) and function_exported?(adapter, :call, 4) do
+      adapter.call(provider, key, request, %{storage: client.storage})
+    else
+      adapter.call(provider, key, request)
     end
   end
 
