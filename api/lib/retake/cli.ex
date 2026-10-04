@@ -25,6 +25,17 @@ defmodule Retake.CLI do
   @spec default_config_path() :: Path.t()
   def default_config_path, do: Path.expand("../config/providers.toml")
 
+  @doc """
+  Inside WSL, the path at which Windows can open a Linux file (`\\\\wsl$\\<distro>\\...`);
+  `nil` elsewhere.
+  """
+  @spec windows_path(Path.t()) :: String.t() | nil
+  def windows_path(file) do
+    if distro = System.get_env("WSL_DISTRO_NAME") do
+      "\\\\wsl$\\#{distro}" <> String.replace(file, "/", "\\")
+    end
+  end
+
   @doc "An error from the config loader, a pipeline step or the provider layer, in words."
   @spec describe(term(), Path.t() | nil) :: String.t()
   def describe([%{path: _, message: _} | _] = errors, path) do

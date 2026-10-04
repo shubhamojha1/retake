@@ -73,7 +73,7 @@ defmodule Retake.Pipeline.Script do
   """
   @spec generate(Client.t(), map(), keyword()) :: {:ok, script()} | {:error, term()}
   def generate(%Client{} = client, brief, opts \\ []) do
-    with {:ok, brief} <- check_brief(brief) do
+    with {:ok, brief} <- normalize_brief(brief) do
       max = Keyword.get(opts, :max_attempts, @max_attempts)
       attempt(client, brief, messages(brief), [], 1, max)
     end
@@ -290,7 +290,12 @@ defmodule Retake.Pipeline.Script do
 
   # --- the brief and the prompt ---------------------------------------------------------------
 
-  defp check_brief(brief) when is_map(brief) do
+  @doc """
+  Checks a brief and fills in its defaults (45 s, English, no tone or audience).
+  `{:error, {:invalid_brief, problems}}` lists every problem at once.
+  """
+  @spec normalize_brief(term()) :: {:ok, map()} | {:error, {:invalid_brief, [String.t()]}}
+  def normalize_brief(brief) when is_map(brief) do
     brief = @brief_defaults |> Map.put(:prompt, nil) |> Map.merge(brief)
 
     errors =
@@ -306,7 +311,7 @@ defmodule Retake.Pipeline.Script do
     if errors == [], do: {:ok, brief}, else: {:error, {:invalid_brief, errors}}
   end
 
-  defp check_brief(_other), do: {:error, {:invalid_brief, ["the brief must be a map"]}}
+  def normalize_brief(_other), do: {:error, {:invalid_brief, ["the brief must be a map"]}}
 
   defp prompt_error(prompt) when is_binary(prompt) do
     cond do
