@@ -23,6 +23,11 @@ config :retake, RetakeWeb.Endpoint,
 # Adapters available to the provider layer in tests (see Retake.Providers.Adapters).
 config :retake, adapters: %{"fake" => Retake.Test.FakeAdapter}
 
+# HTTP adapters talk to Req.Test stubs, never the network: a request nobody stubbed
+# raises, so a test that would reach a real provider fails (AGENTS.md rule 6).
+config :retake,
+  req_options: [plug: {Req.Test, Retake.Providers.Adapters.OpenAICompatible}]
+
 # Tests run the debug renderer (`cargo build -p retake_render`, done by `just test`).
 config :retake, renderer_bin: Path.expand("../../target/debug/retake_render", __DIR__)
 

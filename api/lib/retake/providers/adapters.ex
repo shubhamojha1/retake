@@ -8,7 +8,9 @@ defmodule Retake.Providers.Adapters do
   check bans `Retake.Providers.Adapters` in pipeline modules).
   """
 
-  @builtin %{}
+  @builtin %{
+    "openai_compatible" => Retake.Providers.Adapters.OpenAICompatible
+  }
 
   @spec fetch(String.t()) :: {:ok, module()} | :error
   def fetch(name) do
