@@ -59,14 +59,13 @@ defmodule Retake.Cache do
   @spec fetch_or_run(Path.t(), Storage.t(), parts(), producer(), keyword()) ::
           {:ok, Entry.t(), :hit | :miss} | {:error, term()}
   def fetch_or_run(root, storage, parts, producer, opts \\ []) do
-    hash = request_hash(parts.provider, parts.model, parts.request)
-    now = opts |> Keyword.get_lazy(:now, &DateTime.utc_now/0) |> DateTime.truncate(:second)
+    now = Keyword.get_lazy(opts, :now, &DateTime.utc_now/0)
 
     with false <- Keyword.get(opts, :force, false),
-         {:ok, entry} <- load(root, hash, storage) do
+         {:ok, entry} <- lookup(root, storage, parts) do
       {:ok, entry, :hit}
     else
-      _miss -> produce(root, storage, parts, hash, producer, now)
+      _miss -> produce(root, storage, parts, producer, now)
     end
   end
 
@@ -91,22 +90,10 @@ defmodule Retake.Cache do
 
   # --- producing ---------------------------------------------------------------------
 
-  defp produce(root, storage, parts, hash, producer, now) do
+  defp produce(root, storage, parts, producer, now) do
     case producer.() do
       {:ok, output, meta} ->
-        with {:ok, result} <- store_result(storage, output) do
-          entry = %Entry{
-            request_hash: hash,
-            capability: parts.capability,
-            provider: parts.provider,
-            model: parts.model,
-            request: json_roundtrip(parts.request),
-            created_at: now,
-            cost: cost(meta),
-            result: result
-          }
-
-          save(root, entry)
+        with {:ok, entry} <- store(root, storage, parts, output, meta, now) do
           {:ok, entry, :miss}
         end
 
@@ -115,6 +102,40 @@ defmodule Retake.Cache do
 
       other ->
         {:error, {:invalid_producer_result, other}}
+    end
+  end
+
+  @doc """
+  The cached entry for this request, or `:miss`. A cached asset that is no longer in
+  `storage`, or a damaged cache file, is a miss.
+  """
+  @spec lookup(Path.t(), Storage.t(), parts()) :: {:ok, Entry.t()} | :miss
+  def lookup(root, storage, parts) do
+    load(root, request_hash(parts.provider, parts.model, parts.request), storage)
+  end
+
+  @doc """
+  Stores a result you already have (`output` and `meta` as `fetch_or_run/5`'s producer
+  returns them) and records its entry. For callers, like `Retake.Providers.Client`,
+  that must look up and call separately.
+  """
+  @spec store(Path.t(), Storage.t(), parts(), output(), map(), DateTime.t()) ::
+          {:ok, Entry.t()} | {:error, term()}
+  def store(root, storage, parts, output, meta, now) do
+    with {:ok, result} <- store_result(storage, output) do
+      entry = %Entry{
+        request_hash: request_hash(parts.provider, parts.model, parts.request),
+        capability: parts.capability,
+        provider: parts.provider,
+        model: parts.model,
+        request: json_roundtrip(parts.request),
+        created_at: DateTime.truncate(now, :second),
+        cost: cost(meta),
+        result: result
+      }
+
+      save(root, entry)
+      {:ok, entry}
     end
   end
 
