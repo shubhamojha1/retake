@@ -129,7 +129,7 @@ export default function Result({ video }: { video: Video }) {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-[13px] text-muted">No footage to credit.</p>
+                <p className="mt-2 text-[13px] text-muted">Nothing to credit.</p>
               )}
               <p className="mt-3 text-xs leading-normal text-label">
                 Every clip and the voice-over keep their provider and request in the video’s provenance record.

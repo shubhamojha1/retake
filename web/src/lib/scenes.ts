@@ -30,7 +30,7 @@ export function scenePlan(progress: Progress, stopped: boolean): ScenePlan[] {
       n: i + 1,
       narration: item.narration,
       query: item.query,
-      footage: stateOf(steps?.stock, stopped),
+      footage: stateOf(steps?.visual ?? steps?.stock, stopped),
       voice: stateOf(steps?.voice, stopped),
     }
   })

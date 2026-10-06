@@ -38,7 +38,7 @@ test('after the script, footage and voice-over run side by side and count the sc
 
   assert.deepEqual(states(rows), ['script:done', 'footage:running', 'voice:running', 'render:queued'])
   assert.equal(rows[0].detail, '3 scenes for “Tea”')
-  assert.equal(rows[1].detail, '2 of 3 clips and photos found')
+  assert.equal(rows[1].detail, '2 of 3 pictures and clips ready')
   assert.equal(rows[1].pct, 67)
   assert.equal(rows[2].detail, '1 of 3 narrated and timed')
   assert.equal(rows[2].pct, 33)
@@ -50,6 +50,38 @@ test('footage is done when every scene has its footage', () => {
   const rows = buildSteps({ status: 'running', progress: { steps: { script: scriptDone }, scenes }, error: null })
 
   assert.equal(rows[1].state, 'done')
+})
+
+test('the visuals row counts scenes by their visual step', () => {
+  const scenes = { 1: { visual: { status: 'done' } }, 2: { visual: { status: 'done' } }, 3: { visual: { status: 'started' } } }
+
+  const rows = buildSteps({ status: 'running', progress: { steps: { script: scriptDone }, scenes }, error: null })
+
+  assert.equal(rows[1].name, 'Visuals')
+  assert.equal(rows[1].state, 'running')
+  assert.equal(rows[1].detail, '2 of 3 pictures and clips ready')
+})
+
+test('a job saved before generated images reported its pictures as stock, and still counts', () => {
+  const scenes = { 1: { stock: { status: 'done' } }, 2: { stock: { status: 'done' } }, 3: { stock: { status: 'done' } } }
+
+  const rows = buildSteps({ status: 'running', progress: { steps: { script: scriptDone }, scenes }, error: null })
+
+  assert.equal(rows[1].state, 'done')
+})
+
+test('a failed visual step fails the Visuals row, with the scene and the reason', () => {
+  const progress = {
+    steps: { script: scriptDone },
+    scenes: { 3: { visual: { status: 'failed', message: 'no stock footage or photo found for: "sea"' } } },
+  }
+  const error = { step: 'visual', scene: 3, message: 'no stock footage or photo found for: "sea"' }
+
+  const rows = buildSteps({ status: 'failed', progress, error })
+
+  assert.equal(rows[1].state, 'failed')
+  assert.equal(rows[1].detail, 'Scene 3: no stock footage or photo found for: "sea"')
+  assert.equal(stoppedAt(error), 'Stopped at finding the visuals (scene 3)')
 })
 
 test('rendering shows the share of frames done', () => {

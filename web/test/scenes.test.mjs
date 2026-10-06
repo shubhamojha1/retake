@@ -74,6 +74,27 @@ test('scenePlan follows each scene’s footage and voice-over', () => {
   assert.equal(plan[2].query, 'c')
 })
 
+test('scenePlan reads a scene’s visual step, and the older stock step too', () => {
+  const plan = scenePlan(
+    {
+      steps: progress.steps,
+      scenes: { 1: { visual: { status: 'done' } }, 2: { stock: { status: 'done' } }, 3: { visual: { status: 'started' } } },
+    },
+    false,
+  )
+
+  assert.deepEqual(plan.map((scene) => scene.footage), ['done', 'done', 'running'])
+})
+
+test('credits skips generated images, which have no attribution', () => {
+  const withGenerated = {
+    ...spec,
+    assets: { ...spec.assets, 'vis-2': { kind: 'image', license: { name: 'AI-generated: flux' } } },
+  }
+
+  assert.deepEqual(credits(withGenerated), ['Video by Ann on Pixabay'])
+})
+
 test('scenePlan of a stopped job shows nothing as still running', () => {
   assert.equal(scenePlan(progress, true)[1].voice, 'queued')
 })

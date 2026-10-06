@@ -15,10 +15,13 @@ export interface StepEntry {
   scenes?: number
   title?: string
   outline?: OutlineItem[]
-  /** Footage: "video" or "image", the search phrase, who to credit. */
+  /** Visuals: "video" or "image", where it came from ("generated" or "stock"), the search
+   *  phrase, who to credit (stock only) and the image prompt (generated only). */
   kind?: string
+  source?: string
   query?: string
   credit?: string
+  prompt?: string
   /** Voice-over: its length. */
   duration_ms?: number
 }
@@ -32,7 +35,7 @@ export interface Progress {
   current?: { step: string; scene: number | null }
   /** "brief", "script", "assemble", "render". */
   steps?: Record<string, StepEntry>
-  /** By scene number ("1", "2", ...), then "stock" and "voice". */
+  /** By scene number ("1", "2", ...), then "visual" (older jobs: "stock") and "voice". */
   scenes?: Record<string, Record<string, StepEntry>>
 }
 

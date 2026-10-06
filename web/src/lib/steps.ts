@@ -27,7 +27,7 @@ const ORDER: StepKey[] = ['script', 'footage', 'voice', 'render']
 
 const NAMES: Record<StepKey, string> = {
   script: 'Script',
-  footage: 'Footage',
+  footage: 'Visuals',
   voice: 'Voice-over',
   render: 'Render',
 }
@@ -35,7 +35,8 @@ const NAMES: Record<StepKey, string> = {
 // Which row a failed pipeline step belongs to ("brief", "setup" and the like belong to none).
 const ROW_OF_STEP: Record<string, StepKey | undefined> = {
   script: 'script',
-  stock: 'footage',
+  visual: 'footage',
+  stock: 'footage', // jobs made before generated images
   voice: 'voice',
   assemble: 'render',
   render: 'render',
@@ -45,6 +46,7 @@ const STEP_WORDS: Record<string, string> = {
   brief: 'checking the request',
   setup: 'setting up',
   script: 'the script',
+  visual: 'finding the visuals',
   stock: 'finding footage',
   voice: 'the voice-over',
   assemble: 'putting the scenes together',
@@ -74,11 +76,12 @@ function scriptPart(progress: Progress): Part {
   return running('Writing the script')
 }
 
-// Footage and voice-over: one entry per scene, so count the scenes that are done.
-function perScenePart(progress: Progress, step: 'stock' | 'voice', what: string): Part {
+// Visuals and voice-over: one entry per scene, so count the scenes that are done.
+function perScenePart(progress: Progress, step: 'visual' | 'voice', what: string): Part {
   const entries: [string, StepEntry][] = []
   for (const [scene, steps] of Object.entries(progress.scenes ?? {})) {
-    const entry = steps[step]
+    // Jobs made before generated images reported their pictures as "stock".
+    const entry = steps[step] ?? (step === 'visual' ? steps.stock : undefined)
     if (entry) entries.push([scene, entry])
   }
 
@@ -108,13 +111,13 @@ function renderPart(progress: Progress): Part {
     return running(`${pct}%`, pct)
   }
   if (assemble) return running('Putting the scenes together', 0)
-  return queued('Waiting for the footage and voice-overs')
+  return queued('Waiting for the visuals and voice-overs')
 }
 
 export function buildSteps({ status, progress, error }: Job): StepRow[] {
   const parts: Record<StepKey, Part> = {
     script: scriptPart(progress),
-    footage: perScenePart(progress, 'stock', 'clips and photos found'),
+    footage: perScenePart(progress, 'visual', 'pictures and clips ready'),
     voice: perScenePart(progress, 'voice', 'narrated and timed'),
     render: renderPart(progress),
   }
