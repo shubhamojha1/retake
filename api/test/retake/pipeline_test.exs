@@ -20,6 +20,9 @@ defmodule Retake.PipelineTest do
 
   @brief %{prompt: "Why tea is good for you", target_duration_ms: 8_000}
 
+  # Gives the test profile an image provider (it has none by default).
+  @painter %{"image_slot" => ~s(image = { use = "painter", fallbacks = [] })}
+
   defp toml(dir, overrides \\ %{}) do
     log = Path.join(dir, "calls.log")
     opt = fn name, extra -> Map.get(overrides, name, "") <> extra end
@@ -34,6 +37,7 @@ defmodule Retake.PipelineTest do
     stt = { use = "ears", fallbacks = [] }
     stock = { use = "stock", fallbacks = [] }
     music = { use = "llm", fallbacks = [] }
+    #{opt.("image_slot", "")}
 
     [providers.llm]
     capability = "any"
@@ -62,6 +66,14 @@ defmodule Retake.PipelineTest do
     role = "stock"
     log = "#{log}"
     #{opt.("stock", "")}
+
+    [providers.painter]
+    capability = "image"
+    adapter = "scripted"
+    role = "image"
+    model = "scripted-flux"
+    log = "#{log}"
+    #{opt.("painter", "")}
     """
   end
 
@@ -226,17 +238,17 @@ defmodule Retake.PipelineTest do
                outline
 
       for scene <- 1..3 do
-        assert find(events, :stock, scene, :started)
-        assert find(events, :stock, scene, :done)
+        assert find(events, :visual, scene, :started)
+        assert find(events, :visual, scene, :done)
         assert find(events, :voice, scene, :started)
         assert %{duration_ms: duration} = find(events, :voice, scene, :done)
         assert duration > 0
       end
 
-      assert %{kind: "video", credit: "Video by Test Creator on Scripted"} =
-               find(events, :stock, 1, :done)
+      assert %{kind: "video", source: :stock, credit: "Video by Test Creator on Scripted"} =
+               find(events, :visual, 1, :done)
 
-      assert %{kind: "image"} = find(events, :stock, 2, :done)
+      assert %{kind: "image", source: :stock} = find(events, :visual, 2, :done)
 
       assert find(events, :assemble, nil, :done)
       assert find(events, :render, nil, :started)
@@ -261,12 +273,12 @@ defmodule Retake.PipelineTest do
         |> List.last()
         |> elem(1)
 
-      first_scene = Enum.find_index(steps, &(&1 in [:stock, :voice]))
+      first_scene = Enum.find_index(steps, &(&1 in [:visual, :voice]))
 
       last_scene =
         steps
         |> Enum.with_index()
-        |> Enum.filter(&(elem(&1, 0) in [:stock, :voice]))
+        |> Enum.filter(&(elem(&1, 0) in [:visual, :voice]))
         |> List.last()
         |> elem(1)
 
@@ -290,20 +302,20 @@ defmodule Retake.PipelineTest do
 
       events = events()
       assert find(events, :script, nil, :failed)
-      refute Enum.any?(events, &(&1.step in [:stock, :voice, :assemble, :render]))
+      refute Enum.any?(events, &(&1.step in [:visual, :voice, :assemble, :render]))
       refute File.exists?(Path.join(dir, "out.mp4"))
     end
 
-    test "footage not found for a scene fails that scene's stock step", %{tmp_dir: dir} do
+    test "footage not found for a scene fails that scene's visual step", %{tmp_dir: dir} do
       client = client(dir, %{"stock" => ~s(empty_for = "sea")})
 
-      assert {:error, %{step: :stock, scene: 3, reason: {:no_stock_found, queries}}} =
+      assert {:error, %{step: :visual, scene: 3, reason: {:no_stock_found, queries}}} =
                run(client, dir)
 
       assert "photo sea sunrise" in queries
 
       events = events()
-      assert find(events, :stock, 3, :failed)
+      assert find(events, :visual, 3, :failed)
       refute Enum.any?(events, &(&1.step in [:assemble, :render]))
       refute File.exists?(Path.join(dir, "out.mp4"))
     end
@@ -347,6 +359,55 @@ defmodule Retake.PipelineTest do
 
       assert message =~ "prompt"
       assert calls(dir) == []
+    end
+  end
+
+  describe "run/3: generated images" do
+    defp sources(spec) do
+      Enum.map(spec["scenes"], &spec["assets"][&1["visual"]["asset"]]["provenance"]["source"])
+    end
+
+    test "a scene with an image_prompt gets a generated image, the others stay stock", %{
+      tmp_dir: dir
+    } do
+      assert {:ok, %{spec: spec, output: output}} = run(client(dir, @painter), dir)
+
+      assert sources(spec) == ["stock", "generated", "stock"]
+      assert {:ok, _} = Spec.validate(spec)
+      assert Enum.at(spec["scenes"], 1)["intent"]["image_prompt"] =~ "calm sea"
+      assert hd(spec["scenes"])["intent"]["image_prompt"] == nil
+      assert File.stat!(output).size > 0
+    end
+
+    test "the visual events say where each picture came from", %{tmp_dir: dir} do
+      {:ok, _} = run(client(dir, @painter), dir)
+      events = events()
+
+      assert %{source: :generated, kind: "image", prompt: prompt} =
+               find(events, :visual, 2, :done)
+
+      assert prompt =~ "calm sea"
+      refute Map.has_key?(find(events, :visual, 2, :done), :credit)
+      assert %{source: :stock, kind: "video", credit: _} = find(events, :visual, 1, :done)
+    end
+
+    test "a failing image provider falls back to stock, with a warning", %{tmp_dir: dir} do
+      client = client(dir, Map.put(@painter, "painter", "fail = true"))
+
+      assert {:ok, %{spec: spec, warnings: warnings}} = run(client, dir)
+
+      assert sources(spec) == ["stock", "stock", "stock"]
+      assert Enum.any?(warnings, &(&1 =~ "scene 2" and &1 =~ "stock footage used instead"))
+    end
+
+    test "with no image slot every scene is stock and nothing warns about images", %{
+      tmp_dir: dir
+    } do
+      assert {:ok, %{spec: spec, warnings: warnings}} = run(client(dir), dir)
+
+      assert sources(spec) == ["stock", "stock", "stock"]
+      refute Enum.any?(warnings, &(&1 =~ "image"))
+      refute Enum.any?(calls(dir), &String.starts_with?(&1, "painter"))
     end
   end
 

@@ -1,4 +1,4 @@
-# Retake video spec v0.1
+# Retake video spec v0.2
 
 The spec is a JSON document that fully describes one video. Everything in
 Retake reads or writes it: the generation pipeline fills it in, the renderer
@@ -16,7 +16,7 @@ operations.
    of the referenced assets (checked by `content_hash`), and the renderer
    version. Same inputs, same file.
 2. **Intent is separate from result.** Each scene has an `intent` (narration,
-   visual search terms, on-screen text) and resolved assets (the clip, the
+   stock search terms, an image prompt, on-screen text) and resolved assets (the clip, the
    voice-over file). Editing intent invalidates the assets derived from it.
    This is what makes "regenerate only what changed" possible in Phase 2.
 3. **Assets are referenced by id.** Scenes never embed URLs or file paths. All
@@ -82,7 +82,7 @@ JSON Schema validates shape. The `Spec.validate/1` function must also check:
 | Step | Writes |
 |---|---|
 | 1. LLM: brief → title + scenes | `title`, `scenes[].intent` |
-| 2. Stock search per scene | `assets` (image/video), `scenes[].visual` |
+| 2. Visual per scene: a generated image, else stock search | `assets` (image/video), `scenes[].visual`, `scenes[].intent.image_prompt` |
 | 3. TTS per scene | `assets` (audio), `scenes[].voiceover.asset` |
 | 4. STT on each voice-over | `scenes[].voiceover.words` |
 | 5. Timing pass | `scenes[].duration_ms` (voice-over + padding), transitions |
@@ -91,12 +91,19 @@ JSON Schema validates shape. The `Spec.validate/1` function must also check:
 
 Steps 2–4 run per scene in parallel. Each step is a cache lookup first.
 
+## Versions
+
+- **0.2**: adds the optional `scenes[].intent.image_prompt`, the generation prompt for AI
+  images. A 0.1 spec is a valid 0.2 spec apart from its version string; `Retake.Spec.migrate/1`
+  changes it on load. The renderer reads only the current version.
+- **0.1**: the first format.
+
 ## Deliberately not in v0
 
 - Aspect ratios other than 9:16 (the schema pins 1080×1920)
 - Multiple visual layers per scene, picture-in-picture, keyframed animation
 - Per-word caption styling, emoji, custom caption animations
-- Generated images or video (stock only), avatars, lip sync
+- Generated video, avatars, lip sync (generated images arrived in 0.2)
 - Sound effects, multiple music tracks
 - Brand kits and templates
 - Rational/frame-exact timing

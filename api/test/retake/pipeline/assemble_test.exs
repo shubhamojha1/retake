@@ -86,7 +86,13 @@ defmodule Retake.Pipeline.AssembleTest do
 
   defp part(n, kind, opts \\ []) do
     %{
-      stock: %{asset: stock_asset(n, kind), query: "query #{n}", warnings: []},
+      visual: %{
+        asset: stock_asset(n, kind),
+        query: "query #{n}",
+        source: :stock,
+        prompt: nil,
+        warnings: []
+      },
       voice: voice(n, opts)
     }
   end
@@ -136,7 +142,7 @@ defmodule Retake.Pipeline.AssembleTest do
     test "titles the video and carries the brief" do
       {spec, _} = build!(input())
 
-      assert spec["spec_version"] == "0.1"
+      assert spec["spec_version"] == "0.2"
       assert spec["id"] == "v-abc123"
       assert spec["title"] == "Tea facts"
 
@@ -147,6 +153,47 @@ defmodule Retake.Pipeline.AssembleTest do
                "tone" => "friendly",
                "audience" => "adults"
              }
+    end
+
+    test "puts the script's image_prompt in the scene intent, and leaves it out when there is none" do
+      scenes = [
+        script_scene(1) |> Map.put(:image_prompt, "A dim room, vertical shot."),
+        script_scene(2) |> Map.put(:image_prompt, nil),
+        script_scene(3)
+      ]
+
+      input = input(["image", "image", "image"], %{script: %{title: "Tea facts", scenes: scenes}})
+      {spec, _} = build!(input)
+
+      assert Enum.at(spec["scenes"], 0)["intent"]["image_prompt"] == "A dim room, vertical shot."
+      refute Map.has_key?(Enum.at(spec["scenes"], 1)["intent"], "image_prompt")
+      refute Map.has_key?(Enum.at(spec["scenes"], 2)["intent"], "image_prompt")
+      assert {:ok, _} = Spec.validate(spec)
+    end
+
+    test "a generated image zooms or drifts up and down but never pans sideways" do
+      base = input(["image", "image", "image", "image"])
+
+      scenes =
+        Enum.map(base.scenes, fn part ->
+          put_in(part, [:visual, :asset, "provenance", "source"], "generated")
+        end)
+
+      {spec, _} = build!(%{base | scenes: scenes})
+
+      for scene <- spec["scenes"] do
+        %{"from" => from, "to" => to} = scene["visual"]["motion"]
+        assert from["x"] == to["x"], "scene #{scene["id"]} pans sideways"
+      end
+    end
+
+    test "a stock image still gets the sideways pan in its turn" do
+      {spec, _} = build!(input(["image", "image", "image", "image"]))
+
+      assert Enum.any?(spec["scenes"], fn scene ->
+               %{"from" => from, "to" => to} = scene["visual"]["motion"]
+               from["x"] != to["x"]
+             end)
     end
 
     test "leaves tone and audience out when there are none" do

@@ -8,12 +8,12 @@ defmodule Retake.Pipeline.Assemble do
       %{
         id: "v-1a2b3c",                                  # the video's id (a spec id)
         brief: %{prompt: .., target_duration_ms: .., language: .., tone: .., audience: ..},
-        script: %{title: .., scenes: [%{narration, visual_query, on_screen_text}]},
-        scenes: [%{stock: %{asset: ..}, voice: %{asset: .., voiceover: .., duration_ms: ..}}]
+        script: %{title: .., scenes: [%{narration, visual_query, image_prompt, on_screen_text}]},
+        scenes: [%{visual: %{asset: ..}, voice: %{asset: .., voiceover: .., duration_ms: ..}}]
       }
 
   with one entry in `scenes` for each scene of the script, in order, shaped as
-  `Retake.Pipeline.Stock.find/3` and `Retake.Pipeline.Voice.generate/3` return them.
+  `Retake.Pipeline.Visuals.find/3` and `Retake.Pipeline.Voice.generate/3` return them.
 
   What the assembly decides:
 
@@ -88,7 +88,7 @@ defmodule Retake.Pipeline.Assemble do
     numbered = script.scenes |> Enum.zip(parts) |> Enum.with_index(1)
 
     %{
-      "spec_version" => "0.1",
+      "spec_version" => "0.2",
       "id" => id,
       "title" => script.title |> String.trim() |> String.slice(0, @max_title),
       "brief" => brief(brief),
@@ -118,7 +118,7 @@ defmodule Retake.Pipeline.Assemble do
   defp assets(numbered) do
     Enum.reduce(numbered, %{}, fn {{_scene, part}, n}, assets ->
       assets
-      |> Map.put("vis-#{n}", part.stock.asset)
+      |> Map.put("vis-#{n}", part.visual.asset)
       |> Map.put("vo-#{n}", part.voice.asset)
     end)
   end
@@ -130,7 +130,7 @@ defmodule Retake.Pipeline.Assemble do
       "id" => "s#{n}",
       "intent" => intent(script_scene),
       "duration_ms" => duration,
-      "visual" => visual("vis-#{n}", part.stock.asset, n),
+      "visual" => visual("vis-#{n}", part.visual.asset, n),
       "voiceover" => Map.put(part.voice.voiceover, "asset", "vo-#{n}"),
       "transition_in" => if(n == 1, do: nil, else: %{"kind" => "cut", "duration_ms" => 0})
     }
@@ -139,6 +139,7 @@ defmodule Retake.Pipeline.Assemble do
 
   defp intent(script_scene) do
     %{"narration" => script_scene.narration, "visual_query" => script_scene.visual_query}
+    |> put_present("image_prompt", Map.get(script_scene, :image_prompt))
     |> put_present("on_screen_text", script_scene.on_screen_text)
   end
 
@@ -146,8 +147,9 @@ defmodule Retake.Pipeline.Assemble do
     %{"asset" => asset_id, "fit" => "cover", "trim_start_ms" => 0}
   end
 
-  defp visual(asset_id, _image, n) do
-    {from, to} = Enum.at(@motions, rem(n - 1, length(@motions)))
+  defp visual(asset_id, image, n) do
+    motions = motions(image)
+    {from, to} = Enum.at(motions, rem(n - 1, length(motions)))
 
     %{
       "asset" => asset_id,
@@ -155,6 +157,12 @@ defmodule Retake.Pipeline.Assemble do
       "motion" => %{"from" => from, "to" => to, "easing" => "ease_in_out"}
     }
   end
+
+  # The sideways pan was chosen for tall stock photos. On a generated picture it can sweep across
+  # the whole width and cut the subject at the edges, so a generated image only zooms or drifts
+  # up and down.
+  defp motions(%{"provenance" => %{"source" => "generated"}}), do: List.delete_at(@motions, 1)
+  defp motions(_asset), do: @motions
 
   defp put_overlays(scene, nil, _duration), do: scene
   defp put_overlays(scene, "", _duration), do: scene

@@ -2,12 +2,13 @@ defmodule Retake.Pipeline do
   @moduledoc """
   The whole pipeline: a brief in, a finished video out.
 
-      brief --script--> scenes --(stock + voice, per scene, in parallel)--> assemble --> render
+      brief --script--> scenes --(visual + voice, per scene, in parallel)--> assemble --> render
 
     1. `Retake.Pipeline.Script`: the LLM writes the title and the scenes;
-    2. for each scene, in parallel (up to `:concurrency` scenes at once, and the stock and the
-       voice step of one scene side by side): `Retake.Pipeline.Stock` finds and downloads the
-       footage, `Retake.Pipeline.Voice` makes the narration with its word timings;
+    2. for each scene, in parallel (up to `:concurrency` scenes at once, and the visual and the
+       voice step of one scene side by side): `Retake.Pipeline.Visuals` makes or finds the
+       picture (a generated image, else stock footage), `Retake.Pipeline.Voice` makes the
+       narration with its word timings;
     3. `Retake.Pipeline.Assemble` joins everything into a spec and validates it;
     4. `Retake.Render` renders the spec to an MP4 in a separate process.
 
@@ -19,22 +20,23 @@ defmodule Retake.Pipeline do
   `:on_event` is called with a map for each thing that happens, from whichever process it
   happens in (so it must be safe to call concurrently):
 
-      %{step: :script | :stock | :voice | :assemble | :render | :brief,
+      %{step: :script | :visual | :voice | :assemble | :render | :brief,
         scene: 1..n | nil,
         status: :started | :done | :failed | :progress,
         ...}
 
   `:done` events carry a little detail (the number of scenes, the title and an `outline` of
-  narration and footage search for each scene; the kind of footage found; the voice-over length);
+  narration and footage search for each scene; the kind of picture found and whether it was
+  generated or stock; the voice-over length);
   `:failed` carries `reason`; render `:progress` carries `done` and `total` (frames).
 
   ## Failures
 
-  The first failure ends the run: `{:error, %{step: :stock, scene: 3, reason: ...}}`, so a
+  The first failure ends the run: `{:error, %{step: :visual, scene: 3, reason: ...}}`, so a
   failed video says which step of which scene broke. Nothing is rendered after a failure.
   """
 
-  alias Retake.Pipeline.{Assemble, Script, Stock, Voice}
+  alias Retake.Pipeline.{Assemble, Script, Visuals, Voice}
   alias Retake.Providers.Client
   alias Retake.Render
 
@@ -114,16 +116,16 @@ defmodule Retake.Pipeline do
     end
   end
 
-  # One scene: its footage and its voice-over at the same time.
+  # One scene: its picture and its voice-over at the same time.
   defp prepare(client, scene, number, emit, opts) do
-    stock =
+    visual =
       Task.async(fn ->
         step(
-          :stock,
+          :visual,
           number,
           emit,
-          fn -> Stock.find(client, scene, Keyword.get(opts, :stock, [])) end,
-          &stock_detail/1
+          fn -> Visuals.find(client, scene, Keyword.get(opts, :stock, [])) end,
+          &visual_detail/1
         )
       end)
 
@@ -138,10 +140,10 @@ defmodule Retake.Pipeline do
         )
       end)
 
-    case {Task.await(stock, :infinity), Task.await(voice, :infinity)} do
-      {{:ok, stock}, {:ok, voice}} -> {:ok, %{stock: stock, voice: voice}}
+    case {Task.await(visual, :infinity), Task.await(voice, :infinity)} do
+      {{:ok, visual}, {:ok, voice}} -> {:ok, %{visual: visual, voice: voice}}
       {{:error, failure}, _voice} -> {:error, failure}
-      {_stock, {:error, failure}} -> {:error, failure}
+      {_visual, {:error, failure}} -> {:error, failure}
     end
   end
 
@@ -185,8 +187,16 @@ defmodule Retake.Pipeline do
     }
   end
 
-  defp stock_detail(%{asset: asset, query: query}) do
-    %{kind: asset["kind"], query: query, credit: asset["license"]["attribution"]}
+  # Credit exists only for stock; the prompt only for a generated image.
+  defp visual_detail(%{asset: asset, query: query, source: source, prompt: prompt}) do
+    %{
+      kind: asset["kind"],
+      source: source,
+      query: query,
+      credit: asset["license"]["attribution"],
+      prompt: prompt
+    }
+    |> Map.reject(fn {_key, value} -> is_nil(value) end)
   end
 
   defp voice_detail(%{duration_ms: duration}), do: %{duration_ms: duration}
@@ -224,7 +234,7 @@ defmodule Retake.Pipeline do
 
   defp scene_warnings(parts) do
     for {part, number} <- Enum.with_index(parts, 1),
-        warning <- part.stock.warnings ++ part.voice.warnings,
+        warning <- part.visual.warnings ++ part.voice.warnings,
         do: "scene #{number}: #{warning}"
   end
 end

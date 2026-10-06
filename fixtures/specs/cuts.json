@@ -1,5 +1,5 @@
 {
-  "spec_version": "0.1",
+  "spec_version": "0.2",
   "id": "fixture-cuts",
   "title": "Fixture: image, clip, wide image, clip, joined by cuts",
   "brief": {

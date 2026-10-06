@@ -99,6 +99,7 @@ defmodule Mix.Tasks.Retake.Script do
     for {scene, number} <- Enum.with_index(script.scenes, 1) do
       shell.info("#{number}. #{scene.narration}")
       shell.info("   visual: #{scene.visual_query}")
+      if scene.image_prompt, do: shell.info("   image:  #{scene.image_prompt}")
       if scene.on_screen_text, do: shell.info("   on screen: #{scene.on_screen_text}")
     end
 
@@ -110,7 +111,11 @@ defmodule Mix.Tasks.Retake.Script do
   end
 
   defp scene_json(scene) do
-    base = %{"narration" => scene.narration, "visual_query" => scene.visual_query}
-    if scene.on_screen_text, do: Map.put(base, "on_screen_text", scene.on_screen_text), else: base
+    %{"narration" => scene.narration, "visual_query" => scene.visual_query}
+    |> put_if("image_prompt", scene.image_prompt)
+    |> put_if("on_screen_text", scene.on_screen_text)
   end
+
+  defp put_if(map, _key, nil), do: map
+  defp put_if(map, key, value), do: Map.put(map, key, value)
 end

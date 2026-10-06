@@ -136,6 +136,156 @@ defmodule Retake.Pipeline.ScriptTest do
       assert third.on_screen_text == nil
     end
 
+    test "keeps image_prompt when given, and makes it nil when blank or missing", %{
+      client: client
+    } do
+      scenes = [
+        scene(1, %{"image_prompt" => " A dim room, a phone glowing on a pillow. "}),
+        scene(2, %{"image_prompt" => "   "}),
+        scene(3)
+      ]
+
+      replies([reply(script_json(scenes))])
+
+      assert {:ok, %{scenes: [first, second, third]}} = Script.generate(client, @brief)
+      assert first.image_prompt == "A dim room, a phone glowing on a pillow."
+      assert second.image_prompt == nil
+      assert third.image_prompt == nil
+    end
+
+    test "an image_prompt over 450 characters is rejected and the reply retried", %{
+      client: client
+    } do
+      too_long = [scene(1, %{"image_prompt" => String.duplicate("a", 451)}), scene(2), scene(3)]
+      replies([reply(script_json(too_long)), reply(script_json())])
+
+      assert {:ok, %{scenes: scenes}} = Script.generate(client, @brief)
+      assert length(scenes) == 3
+      assert length(requests()) == 2
+    end
+
+    test "the prompt asks for an image_prompt in every scene, kept to the middle of the picture",
+         %{
+           client: client
+         } do
+      replies([reply(script_json())])
+      {:ok, _} = Script.generate(client, @brief)
+
+      [request] = requests()
+      system = request["messages"] |> hd() |> Map.fetch!("content")
+      assert system =~ ~s("image_prompt")
+      assert system =~ "vertical composition"
+      assert system =~ "middle half"
+    end
+
+    test "one style for the whole video is added to every image prompt", %{client: client} do
+      scenes = [
+        scene(1, %{"image_prompt" => "A dim room."}),
+        scene(2, %{"image_prompt" => "A glowing brain."}),
+        scene(3)
+      ]
+
+      json =
+        Jason.encode!(%{
+          "title" => "Tea facts",
+          "style" => " soft watercolor, warm palette ",
+          "scenes" => scenes
+        })
+
+      replies([reply(json)])
+
+      assert {:ok, %{style: "soft watercolor, warm palette", scenes: [first, second, third]}} =
+               Script.generate(client, @brief)
+
+      assert first.image_prompt == "A dim room. Style: soft watercolor, warm palette"
+      assert second.image_prompt == "A glowing brain. Style: soft watercolor, warm palette"
+      assert third.image_prompt == nil
+    end
+
+    test "a blank or missing style leaves the image prompts as they are", %{client: client} do
+      scenes = [scene(1, %{"image_prompt" => "A dim room."}), scene(2), scene(3)]
+
+      for style <- [%{"style" => "   "}, %{}] do
+        json = Jason.encode!(Map.merge(%{"title" => "Tea facts", "scenes" => scenes}, style))
+        replies([reply(json)])
+
+        assert {:ok, %{style: nil, scenes: [first | _]}} = Script.generate(client, @brief)
+        assert first.image_prompt == "A dim room."
+      end
+    end
+
+    test "a style over 120 characters is rejected and the reply retried", %{client: client} do
+      bad =
+        Jason.encode!(%{
+          "title" => "Tea facts",
+          "style" => String.duplicate("s", 121),
+          "scenes" => [scene(1), scene(2), scene(3)]
+        })
+
+      replies([reply(bad), reply(script_json())])
+
+      assert {:ok, _} = Script.generate(client, @brief)
+      assert length(requests()) == 2
+    end
+
+    test "the longest prompt and style still fit the spec's 600 characters", %{client: client} do
+      json =
+        Jason.encode!(%{
+          "title" => "Tea facts",
+          "style" => String.duplicate("s", 120),
+          "scenes" => [
+            scene(1, %{"image_prompt" => String.duplicate("a", 450)}),
+            scene(2),
+            scene(3)
+          ]
+        })
+
+      replies([reply(json)])
+
+      assert {:ok, %{scenes: [first | _]}} = Script.generate(client, @brief)
+      assert String.length(first.image_prompt) <= 600
+    end
+
+    test "the prompt asks for a clearly lit subject, even at night", %{client: client} do
+      replies([reply(script_json())])
+      {:ok, _} = Script.generate(client, @brief)
+
+      [request] = requests()
+      system = request["messages"] |> hd() |> Map.fetch!("content")
+      assert system =~ "clearly lit"
+    end
+
+    test "the prompt asks for scenes a camera could film, not symbols", %{client: client} do
+      replies([reply(script_json())])
+      {:ok, _} = Script.generate(client, @brief)
+
+      [request] = requests()
+      system = request["messages"] |> hd() |> Map.fetch!("content")
+      assert system =~ "a camera could film"
+      assert system =~ "not through symbols"
+    end
+
+    test "the prompt keeps the medium out of the image prompts, because the style sets it", %{
+      client: client
+    } do
+      replies([reply(script_json())])
+      {:ok, _} = Script.generate(client, @brief)
+
+      [request] = requests()
+      system = request["messages"] |> hd() |> Map.fetch!("content")
+      assert system =~ "the style sets the medium"
+    end
+
+    test "the prompt asks for one style for the whole video", %{client: client} do
+      replies([reply(script_json())])
+      {:ok, _} = Script.generate(client, @brief)
+
+      [request] = requests()
+      system = request["messages"] |> hd() |> Map.fetch!("content")
+      assert system =~ ~s("style")
+      assert system =~ "the same style"
+    end
+
     test "trims whitespace around every field", %{client: client} do
       scenes = [scene(1, %{"narration" => "  Hello there.  ", "visual_query" => " a cup "})]
       replies([reply(script_json(scenes, "  A title  "))])
@@ -183,6 +333,16 @@ defmodule Retake.Pipeline.ScriptTest do
       assert system =~ "about 5 scenes"
       assert system =~ "75 words"
       assert system =~ "30 seconds"
+    end
+
+    test "asks for scenes of about the same length, so the pacing is even", %{client: client} do
+      replies([reply(script_json())])
+      {:ok, _} = Script.generate(client, %{prompt: "Tea", target_duration_ms: 30_000})
+
+      [%{"messages" => [%{"content" => system}, _user]}] = requests()
+      # 75 words over 5 scenes: 15 a scene
+      assert system =~ "about 15 words"
+      assert system =~ "about the same time"
     end
   end
 

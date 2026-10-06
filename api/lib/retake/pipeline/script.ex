@@ -30,6 +30,7 @@ defmodule Retake.Pipeline.Script do
     "required" => ["title", "scenes"],
     "properties" => %{
       "title" => %{"type" => "string", "minLength" => 1, "maxLength" => 200},
+      "style" => %{"type" => "string", "maxLength" => 120},
       "scenes" => %{
         "type" => "array",
         "minItems" => 1,
@@ -41,6 +42,8 @@ defmodule Retake.Pipeline.Script do
           "properties" => %{
             "narration" => %{"type" => "string", "minLength" => 1, "maxLength" => 1000},
             "visual_query" => %{"type" => "string", "minLength" => 1, "maxLength" => 300},
+            # 450 + the style (120) + "Style: " stays under the spec's 600 for intent.image_prompt.
+            "image_prompt" => %{"type" => "string", "maxLength" => 450},
             "on_screen_text" => %{"type" => "string", "maxLength" => 120}
           }
         }
@@ -52,10 +55,12 @@ defmodule Retake.Pipeline.Script do
   @type scene :: %{
           narration: String.t(),
           visual_query: String.t(),
+          image_prompt: String.t() | nil,
           on_screen_text: String.t() | nil
         }
   @type script :: %{
           title: String.t(),
+          style: String.t() | nil,
           scenes: [scene()],
           warnings: [String.t()],
           cached: boolean()
@@ -235,7 +240,8 @@ defmodule Retake.Pipeline.Script do
 
   # The schema allows blank strings of spaces; a script with them is unusable.
   defp clean(data) do
-    scenes = Enum.map(data["scenes"], &clean_scene/1)
+    style = trimmed(data["style"])
+    scenes = Enum.map(data["scenes"], &clean_scene(&1, style))
     title = String.trim(data["title"])
 
     errors =
@@ -244,20 +250,18 @@ defmodule Retake.Pipeline.Script do
             do: "/scenes/#{index}: #{message}"
 
     case errors do
-      [] -> {:ok, %{title: title, scenes: Enum.map(scenes, fn {:ok, scene} -> scene end)}}
-      errors -> {:error, errors}
+      [] ->
+        {:ok,
+         %{title: title, style: style, scenes: Enum.map(scenes, fn {:ok, scene} -> scene end)}}
+
+      errors ->
+        {:error, errors}
     end
   end
 
-  defp clean_scene(scene) do
+  defp clean_scene(scene, style) do
     narration = String.trim(scene["narration"])
     visual_query = String.trim(scene["visual_query"])
-
-    on_screen_text =
-      case scene["on_screen_text"] do
-        nil -> nil
-        text -> if String.trim(text) == "", do: nil, else: String.trim(text)
-      end
 
     cond do
       narration == "" ->
@@ -267,9 +271,25 @@ defmodule Retake.Pipeline.Script do
         {:error, "visual_query must not be blank"}
 
       true ->
-        {:ok, %{narration: narration, visual_query: visual_query, on_screen_text: on_screen_text}}
+        {:ok,
+         %{
+           narration: narration,
+           visual_query: visual_query,
+           image_prompt: with_style(trimmed(scene["image_prompt"]), style),
+           on_screen_text: trimmed(scene["on_screen_text"])
+         }}
     end
   end
+
+  # One style for the whole video, written once by the model and added to every image prompt
+  # here, so the scenes are painted alike and the spec holds each full prompt.
+  defp with_style(nil, _style), do: nil
+  defp with_style(prompt, nil), do: prompt
+  defp with_style(prompt, style), do: "#{prompt} Style: #{style}"
+
+  # Optional text: nil when absent or blank, trimmed otherwise.
+  defp trimmed(nil), do: nil
+  defp trimmed(text), do: if(String.trim(text) == "", do: nil, else: String.trim(text))
 
   # --- soft checks -------------------------------------------------------------------------
 
@@ -335,20 +355,35 @@ defmodule Retake.Pipeline.Script do
   defp messages(brief) do
     seconds = div(brief.target_duration_ms, 1000)
     scenes = (seconds / @seconds_per_scene) |> round() |> max(3) |> min(12)
+    # About the same words in every scene, so the scenes last about the same time.
+    per_scene = (target_words(brief) / scenes) |> round() |> max(5)
 
     system = """
     You are a scriptwriter for short vertical videos (TikTok, Reels, Shorts). Write the \
     voice-over script and choose the visuals, scene by scene.
 
     Reply with ONLY a JSON object, no markdown and no commentary, shaped like this:
-    {"title": "...", "scenes": [{"narration": "...", "visual_query": "...", "on_screen_text": "..."}]}
+    {"title": "...", "style": "...", "scenes": [{"narration": "...", "visual_query": "...", "image_prompt": "...", "on_screen_text": "..."}]}
 
     Rules:
-    - narration: what the narrator says in this scene. Plain spoken sentences, one to three \
-    short ones. No emojis, hashtags or stage directions. Write it in the language "#{brief.language}".
+    - narration: what the narrator says in this scene: plain spoken language, one sentence of about \
+    #{per_scene} words (never more than #{per_scene + 6}). Every scene should last about the same time, so \
+    split a long thought across two scenes. No emojis, hashtags or stage directions. Write it in the \
+    language "#{brief.language}".
     - visual_query: two to five English words describing a real stock video or photo that fits \
     the scene, for example "phone battery low dark room". Concrete and filmable. No names, brands, \
     text or logos.
+    - style: one short phrase naming a single visual style for the whole video, for example \
+    "soft watercolor illustration, warm palette" or "cinematic photo, natural light". It is added to \
+    every image_prompt, so every scene gets the same style: do not repeat it in the image prompts.
+    - image_prompt: one or two English sentences describing a real scene a camera could film for \
+    this scene: a person doing something, a place, an object in use. Show the idea through a human \
+    moment, not through symbols, icons, diagrams, collages or glowing shapes. Give the subject, the \
+    setting and the light, in a vertical composition with the \
+    subject in the centre. Keep everything important in the middle half of the picture, because the \
+    sides get cropped. Concrete and visual. No text, logos, brands or real people's names. \
+    Do not name a medium (photo, illustration, render, painting): the style sets the medium. \
+    The subject must be clearly lit and easy to see, even in a night scene.
     - on_screen_text: optional, a headline of at most six words shown over the scene. Leave it out \
     unless it helps.
     - Open with a hook in the first scene. End with a clear takeaway.

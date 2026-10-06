@@ -93,9 +93,29 @@ fn spec_rejects_wrong_type() {
 #[test]
 fn spec_rejects_unsupported_version() {
     let mut spec = minimal();
-    spec["spec_version"] = json!("0.2");
+    spec["spec_version"] = json!("0.3");
     let err = parse(&spec).unwrap_err();
     assert!(err.to_string().contains("spec_version"), "{err}");
+}
+
+#[test]
+fn spec_rejects_the_previous_version() {
+    // Elixir migrates 0.1 specs before rendering; the renderer only reads the current format.
+    let mut spec = minimal();
+    spec["spec_version"] = json!("0.1");
+    let err = parse(&spec).unwrap_err();
+    assert!(err.to_string().contains("spec_version"), "{err}");
+}
+
+#[test]
+fn spec_accepts_an_image_prompt() {
+    let mut spec = minimal();
+    spec["scenes"][0]["intent"]["image_prompt"] = json!("A dim room, vertical shot.");
+    let parsed = parse(&spec).expect("image_prompt is part of the intent");
+    assert_eq!(
+        parsed.scenes[0].intent.image_prompt.as_deref(),
+        Some("A dim room, vertical shot.")
+    );
 }
 
 #[test]

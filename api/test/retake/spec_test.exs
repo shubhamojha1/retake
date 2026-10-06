@@ -22,8 +22,42 @@ defmodule Retake.SpecTest do
   describe "example specs" do
     for name <- ["minimal.json", "explainer.json"] do
       test "#{name} is valid" do
-        assert {:ok, %{"spec_version" => "0.1"}} = Spec.validate(example(unquote(name)))
+        assert {:ok, %{"spec_version" => "0.2"}} = Spec.validate(example(unquote(name)))
       end
+    end
+  end
+
+  describe "versions" do
+    test "a 0.1 spec is migrated to 0.2" do
+      old = "minimal.json" |> example() |> set(["spec_version"], "0.1")
+      assert {:ok, %{"spec_version" => "0.2"}} = Spec.validate(old)
+    end
+
+    test "migrate/1 changes only the version of a 0.1 spec and leaves anything else alone" do
+      old = "minimal.json" |> example() |> set(["spec_version"], "0.1")
+
+      assert Spec.migrate(old) == set(old, ["spec_version"], "0.2")
+      assert Spec.migrate(%{"spec_version" => "9.9"}) == %{"spec_version" => "9.9"}
+      assert Spec.migrate("not a map") == "not a map"
+    end
+
+    test "a scene's intent may carry an image_prompt" do
+      spec =
+        "minimal.json"
+        |> example()
+        |> set(["scenes", Access.at(0), "intent", "image_prompt"], "A dim room, vertical shot.")
+
+      assert {:ok, _} = Spec.validate(spec)
+    end
+
+    test "an image_prompt over 600 characters is rejected" do
+      result =
+        "minimal.json"
+        |> example()
+        |> set(["scenes", Access.at(0), "intent", "image_prompt"], String.duplicate("a", 601))
+        |> Spec.validate()
+
+      assert_error(result, "/scenes/0/intent/image_prompt", :schema)
     end
   end
 
@@ -55,8 +89,8 @@ defmodule Retake.SpecTest do
       assert_error(result, "/title", :schema)
     end
 
-    test "unsupported spec_version is rejected" do
-      result = "minimal.json" |> example() |> set(["spec_version"], "0.2") |> Spec.validate()
+    test "an unknown spec_version is rejected" do
+      result = "minimal.json" |> example() |> set(["spec_version"], "0.3") |> Spec.validate()
       assert_error(result, "/spec_version", :schema)
     end
 

@@ -5,14 +5,14 @@ defmodule Retake.Videos.Progress do
   is and sent to a browser:
 
       %{
-        "current" => %{"step" => "stock", "scene" => 2},
+        "current" => %{"step" => "visual", "scene" => 2},
         "steps" => %{
           "script" => %{"status" => "done", "scenes" => 5, "title" => "..."},
           "assemble" => %{"status" => "started"},
           "render" => %{"status" => "running", "done" => 120, "total" => 840}
         },
         "scenes" => %{
-          "1" => %{"stock" => %{"status" => "done", "kind" => "video", "credit" => "..."},
+          "1" => %{"visual" => %{"status" => "done", "kind" => "video", "source" => "stock", "credit" => "..."},
                    "voice" => %{"status" => "done", "duration_ms" => 3800}}
         }
       }

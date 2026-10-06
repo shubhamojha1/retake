@@ -88,11 +88,11 @@ defmodule Retake.Videos.RunnerTest do
       assert Map.keys(progress["scenes"]) |> Enum.sort() == ["1", "2", "3"]
 
       for {_scene, steps} <- progress["scenes"] do
-        assert steps["stock"]["status"] == "done"
+        assert steps["visual"]["status"] == "done"
         assert steps["voice"]["status"] == "done"
       end
 
-      assert progress["scenes"]["1"]["stock"]["kind"] == "video"
+      assert progress["scenes"]["1"]["visual"]["kind"] == "video"
     end
 
     test "tells watchers each step, in order, before the final status", %{tmp_dir: dir} do
@@ -106,7 +106,7 @@ defmodule Retake.Videos.RunnerTest do
       assert_received {:video_event,
                        %{"step" => "script", "status" => "done", "title" => "Tea in three scenes"}}
 
-      assert_received {:video_event, %{"step" => "stock", "scene" => 2, "status" => "done"}}
+      assert_received {:video_event, %{"step" => "visual", "scene" => 2, "status" => "done"}}
       assert_received {:video_event, %{"step" => "voice", "scene" => 3, "status" => "done"}}
 
       assert_received {:video_event,
@@ -152,11 +152,11 @@ defmodule Retake.Videos.RunnerTest do
       video = run_job()
 
       assert video.status == "failed"
-      assert %{"step" => "stock", "scene" => 3, "message" => message} = video.error
+      assert %{"step" => "visual", "scene" => 3, "message" => message} = video.error
       assert message =~ "no stock footage or photo found"
       assert video.output_path == nil
       assert video.progress["steps"]["script"]["status"] == "done"
-      assert %{"status" => "failed", "message" => _} = video.progress["scenes"]["3"]["stock"]
+      assert %{"status" => "failed", "message" => _} = video.progress["scenes"]["3"]["visual"]
       refute Map.has_key?(video.progress["steps"], "render")
     end
 

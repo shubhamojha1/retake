@@ -8,9 +8,14 @@ defmodule Retake.Spec do
 
   A spec stays a plain decoded map with string keys. Errors point at the
   problem with a JSON Pointer (RFC 6901), for example `/scenes/0/voiceover`.
+
+  A spec written for an older version is migrated first (`migrate/1`), so `validate/1` and
+  `load/1` return the current format.
   """
 
   alias Retake.Spec.{Rules, Schema}
+
+  @current_version "0.2"
 
   @type t :: map()
   @type error :: %{path: String.t(), rule: atom(), message: String.t()}
@@ -24,9 +29,21 @@ defmodule Retake.Spec do
     end
   end
 
-  @doc "Validates a decoded spec. Returns every error found, not just the first."
+  @doc """
+  Brings a spec written for an older format up to the current one: a 0.1 spec only needs its
+  version changed (0.2 added an optional field). Anything else is returned as it is.
+  """
+  @spec migrate(term()) :: term()
+  def migrate(%{"spec_version" => "0.1"} = spec),
+    do: Map.put(spec, "spec_version", @current_version)
+
+  def migrate(spec), do: spec
+
+  @doc "Validates a decoded spec (migrated first). Returns every error found, not just the first."
   @spec validate(term()) :: {:ok, t()} | {:error, [error()]}
   def validate(spec) do
+    spec = migrate(spec)
+
     with :ok <- Schema.validate(spec),
          [] <- Rules.check(spec) do
       {:ok, spec}

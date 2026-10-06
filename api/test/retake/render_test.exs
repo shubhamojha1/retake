@@ -97,7 +97,7 @@ defmodule Retake.RenderTest do
     end
 
     test "an invalid spec is a structured error", %{tmp_dir: dir} do
-      spec = put_in(short_minimal(), ["spec_version"], "0.2")
+      spec = put_in(short_minimal(), ["spec_version"], "0.3")
 
       assert {:error, %{kind: :render_failed, message: message}} =
                Render.run(spec, output: Path.join(dir, "out.mp4"), base_dir: @root)

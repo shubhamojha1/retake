@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "required": ["spec_version", "id", "title", "brief", "output", "assets", "scenes", "captions", "music"],
   "properties": {
-    "spec_version": { "const": "0.1" },
+    "spec_version": { "const": "0.2" },
     "id": { "$ref": "#/$defs/id" },
     "title": { "type": "string", "minLength": 1, "maxLength": 200 },
 
@@ -220,7 +220,8 @@
           "required": ["narration", "visual_query"],
           "properties": {
             "narration": { "type": "string", "maxLength": 1000 },
-            "visual_query": { "type": "string", "maxLength": 300, "description": "Stock search terms in v0; a generation prompt in later versions." },
+            "visual_query": { "type": "string", "maxLength": 300, "description": "Stock search terms." },
+            "image_prompt": { "type": "string", "maxLength": 600, "description": "What an image generator should paint for this scene (added in 0.2). Used when the profile has an image provider; visual_query is the stock fallback." },
             "on_screen_text": { "type": "string", "maxLength": 120 }
           }
         },

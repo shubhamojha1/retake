@@ -11,7 +11,9 @@ defmodule Mix.Tasks.Retake.Video do
   the narration, then the render). It needs everything the single steps need:
   `config/providers.toml`, `GROQ_API_KEY` for the script and the transcription, a stock key
   (`PIXABAY_API_KEY`), the Kokoro server (`just kokoro`) and the release build of the
-  renderer (`just video` builds it).
+  renderer (`just video` builds it). If your profile has an `image` slot and its keys are set
+  (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), scenes that have an image prompt get a
+  generated image; the others, and any scene whose image fails, use stock footage.
 
   Options:
 
@@ -132,8 +134,11 @@ defmodule Mix.Tasks.Retake.Video do
   defp line(%{step: :script, status: :done} = e, _last),
     do: "[script]      #{e.scenes} scenes: #{inspect(e.title)}"
 
-  defp line(%{step: :stock, scene: n, status: :done} = e, _last),
-    do: "[scene #{n}] footage: #{e.kind} for #{inspect(e.query)} (#{e.credit})"
+  defp line(%{step: :visual, scene: n, status: :done, source: :generated} = e, _last),
+    do: "[scene #{n}] visual:  generated #{e.kind} for #{inspect(e.prompt)}"
+
+  defp line(%{step: :visual, scene: n, status: :done} = e, _last),
+    do: "[scene #{n}] visual:  #{e.kind} for #{inspect(e.query)} (#{e.credit})"
 
   defp line(%{step: :voice, scene: n, status: :done} = e, _last),
     do: "[scene #{n}] voice:   #{Float.round(e.duration_ms / 1000, 1)} s scene"

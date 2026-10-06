@@ -13,7 +13,7 @@ use serde_json::Value;
 
 use crate::Error;
 
-pub const SUPPORTED_VERSION: &str = "0.1";
+pub const SUPPORTED_VERSION: &str = "0.2";
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -97,6 +97,7 @@ pub struct Scene {
 pub struct Intent {
     pub narration: String,
     pub visual_query: String,
+    pub image_prompt: Option<String>,
     pub on_screen_text: Option<String>,
 }
 

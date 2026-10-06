@@ -8,6 +8,7 @@ defmodule Retake.Test.ScriptedAdapter do
     * `"stock"`: finds the fixture clip for a query containing "clip", the fixture photos for
       "gradient" and "sea", nothing otherwise, and "downloads" the real fixture files
       (`fixtures/media`);
+    * `"image"`: "paints" the fixture photo `gradient.jpg` (1350x2400) for any prompt;
     * `"tts"`: a silent 24 kHz WAV, 400 ms a word;
     * `"stt"`: reads that WAV from the storage and returns one word per 400 ms.
 
@@ -32,7 +33,11 @@ defmodule Retake.Test.ScriptedAdapter do
         "visual_query" => "clip video steam",
         "on_screen_text" => "Wake Up"
       },
-      %{"narration" => "It is full of antioxidants.", "visual_query" => "photo gradient leaves"},
+      %{
+        "narration" => "It is full of antioxidants.",
+        "visual_query" => "photo gradient leaves",
+        "image_prompt" => "A calm sea at sunrise, vertical shot, soft light."
+      },
       %{"narration" => "So sip it every day.", "visual_query" => "photo sea sunrise"}
     ]
   }
@@ -100,6 +105,11 @@ defmodule Retake.Test.ScriptedAdapter do
 
     output = %{"language" => "english", "duration_ms" => duration, "text" => "", "words" => words}
     {:ok, {:json, output}, %{cost_usd: 0.0, units: %{"seconds" => duration / 1000}}}
+  end
+
+  defp answer("image", _provider, %{"prompt" => _prompt}, _context) do
+    {:ok, {:binary, File.read!(Path.join(@fixtures, "gradient.jpg")), "jpg"},
+     %{cost_usd: 0.0, units: %{"steps" => 4}}}
   end
 
   defp answer(role, _provider, request, _context) do
