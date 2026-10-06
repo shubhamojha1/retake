@@ -93,6 +93,21 @@ defmodule Retake.VideosTest do
       assert video.error == nil
     end
 
+    test "succeed/2 keeps a warning of any length (a provider's error text can be long)" do
+      video = create()
+      long = "the image could not be made (" <> String.duplicate("x", 600) <> ")"
+
+      result = %{
+        id: video.id,
+        spec: %{"title" => "Tea", "scenes" => [%{"duration_ms" => 1_000}]},
+        output: "/out/#{video.id}.mp4",
+        warnings: [long, "short one"]
+      }
+
+      assert {:ok, _} = Videos.succeed(video, result)
+      assert Videos.get(video.id).warnings == [long, "short one"]
+    end
+
     test "fail/2 says where it failed and why, in words" do
       video = create()
 
