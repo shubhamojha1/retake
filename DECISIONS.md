@@ -183,3 +183,31 @@ cost (no cost in the job JSON), no voice, captions or music options (the API tak
 **Cost:** the fonts need the network (self-host them to run fully offline); a render bar moves in 5% steps;
 anyone who can reach the server can watch any job; a hash route needs no server setup but is not a
 pretty address.
+
+## D25. The `image` capability is optional in a profile, and its presence means "generated first, stock as the fallback"
+A profile with an `image` slot makes an image for every scene that has an `image_prompt`; any
+failure (refusal, rate limit, spent budget, bad reply) falls back to stock for that scene with a
+warning, and a missing key or a missing slot falls back silently. A profile without the slot is
+stock only, so existing `providers.toml` files keep loading. There is no separate `visuals`
+setting.
+**Cost:** no per-video choice between generated and stock (the UI has none to offer yet); a
+video whose images keep failing quietly becomes a stock video, visible only in its warnings; an
+existing `config/providers.toml` does not get the new provider until its owner adds it.
+
+## D26. Spec 0.2: `scenes[].intent.image_prompt`, with a 0.1 migration
+Generation needs a longer, richer sentence than a stock search phrase, and rule 4 keeps intent
+apart from assets, so the prompt is a new optional intent field, not provenance only. A 0.1 spec
+is valid as 0.2 once its version string changes; `Retake.Spec.migrate/1` does that on load. The
+Rust renderer reads only 0.2.
+**Cost:** a format bump across the schema, SPEC.md, examples, fixtures, Elixir and Rust; stored
+jobs keep their 0.1 spec until something loads them.
+
+## D27. Cloudflare Workers AI (FLUX.1 schnell) is the first image provider, with its own adapter
+The only hosted free tier checked against primary docs (10,000 Neurons a day, no card). It speaks
+its own API (token plus account id in the URL), so it gets a provider-specific adapter (D5); the
+account id is read from an environment variable named in the config. Gemini's image models have
+no free tier on Google's pricing page.
+**Cost:** the free allowance and the model list are Cloudflare's to change. The model returns
+1024x1024 images (measured), so `cover` fit on a 1080x1920 video shows about 56% of a picture's
+width and upsamples it about 1.9x; the script asks for the subject in the middle half and the
+step warns. One more account and two environment variables for the user.

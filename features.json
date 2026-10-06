@@ -140,7 +140,7 @@
       "id": "F16-generated-images",
       "behavior": "Scenes can get a generated image instead of stock: the script step also writes a visual prompt per scene (a generation prompt, richer than the stock search phrase); an image capability and adapter (hosted or free image model) behind Retake.Providers.Client; a Visuals step chooses generated or stock per scene from the profile; the image gets the renderer's zoom and pan; provenance source generated, with cost and the prompt; budget caps apply.",
       "verification": "cd api && mix test test/retake/providers test/retake/pipeline",
-      "state": "not_started"
+      "state": "active"
     },
     {
       "id": "F17-generated-video",
