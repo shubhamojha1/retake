@@ -6,6 +6,8 @@ defmodule Retake.Providers.ClientTest do
   alias Retake.Storage
   alias Retake.Storage.Local
 
+  import ExUnit.CaptureLog
+
   @moduletag :tmp_dir
 
   @config """
@@ -205,6 +207,78 @@ defmodule Retake.Providers.ClientTest do
                Client.call(client, :llm, @request, force: true)
 
       assert {:ok, %Entry{result: {:json, "new"}}, :hit} = Client.call(client, :llm, @request)
+    end
+  end
+
+  describe "a provider that fell back" do
+    test "is logged with the reason, because the caller only sees the answer", %{client: client} do
+      client = client.([])
+      answers(%{"a" => {:error, :timeout}, "b" => ok({:json, %{"text" => "from b"}})})
+
+      log =
+        capture_log(fn ->
+          assert {:ok, %Entry{provider: "b"}, :miss} = Client.call(client, :llm, @request)
+        end)
+
+      assert log =~ "llm"
+      assert log =~ "a failed"
+      assert log =~ ":timeout"
+      assert log =~ "b answered"
+    end
+
+    test "nothing is logged when the first provider answers", %{client: client} do
+      client = client.([])
+      answers(%{"a" => ok({:json, 1})})
+
+      assert capture_log(fn -> Client.call(client, :llm, @request) end) == ""
+    end
+  end
+
+  describe "one_at_a_time" do
+    # Four calls from four processes, each taking 40 ms; `max` is the most that ran together.
+    defp overlap(client) do
+      {:ok, running} = Agent.start_link(fn -> %{now: 0, max: 0} end)
+
+      answer = fn request ->
+        Agent.update(running, fn s -> %{s | now: s.now + 1, max: max(s.max, s.now + 1)} end)
+        Process.sleep(40)
+        Agent.update(running, fn s -> %{s | now: s.now - 1} end)
+        {:ok, {:json, %{"n" => request["n"]}}, %{}}
+      end
+
+      results =
+        1..4
+        |> Enum.map(fn n ->
+          Task.async(fn ->
+            Process.put(:fake_adapter_answers, %{"b" => answer})
+            Client.call(client, :llm, Map.put(@request, "n", n))
+          end)
+        end)
+        |> Task.await_many()
+
+      assert Enum.all?(results, &match?({:ok, _, :miss}, &1))
+      Agent.get(running, & &1.max)
+    end
+
+    defp only_b(extra) do
+      @config
+      |> String.replace(
+        ~s(llm = { use = "a", fallbacks = ["b"] }),
+        ~s(llm = { use = "b", fallbacks = [] })
+      )
+      |> String.replace(~s(model = "small"\n), ~s(model = "small"\n#{extra}\n))
+    end
+
+    test "without the setting, calls to a provider run side by side (the control)", %{
+      client: client
+    } do
+      {:ok, config} = Config.parse(only_b(""))
+      assert overlap(client.(config: config)) > 1
+    end
+
+    test "with the setting, calls to the provider never run at the same time", %{client: client} do
+      {:ok, config} = Config.parse(only_b("one_at_a_time = true"))
+      assert overlap(client.(config: config)) == 1
     end
   end
 

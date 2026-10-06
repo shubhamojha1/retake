@@ -81,6 +81,29 @@ defmodule Retake.ProvidersTest do
     test "unknown capability", %{config: config} do
       assert Providers.resolve(config, "dev", :smell) == {:error, {:unknown_capability, :smell}}
     end
+
+    test "a profile with no image slot has no image provider", %{config: config} do
+      assert Providers.resolve(config, "dev", :image) ==
+               {:error, {:capability_not_configured, :image}}
+    end
+
+    test "resolves the image provider when the profile has one" do
+      toml =
+        @config
+        |> String.replace(
+          ~s(music = { use = "m", fallbacks = [] }\n),
+          ~s(music = { use = "m", fallbacks = [] }\nimage = { use = "i", fallbacks = [] }\n)
+        )
+        |> Kernel.<>("""
+
+        [providers.i]
+        capability = "image"
+        adapter = "cloudflare_workers_ai_image"
+        """)
+
+      {:ok, config} = Config.parse(toml)
+      assert {:ok, [%{name: "i"}]} = Providers.resolve(config, "dev", :image)
+    end
   end
 
   describe "run/5" do
@@ -103,6 +126,16 @@ defmodule Retake.ProvidersTest do
       assert {:ok, :from_b, %{provider: "b"}} = run(config, usage, fun)
       assert_received {:called, "a", _}
       assert_received {:called, "b", nil}
+    end
+
+    test "says which providers failed before the one that answered", %{
+      config: config,
+      usage: usage
+    } do
+      fun = adapter(%{"a" => {:error, :timeout}, "b" => {:ok, :from_b, %{cost_usd: 0.0}}})
+
+      assert {:ok, :from_b, %{provider: "b", failed: [%{provider: "a", reason: :timeout}]}} =
+               run(config, usage, fun)
     end
 
     test "skips a provider whose key is missing without calling it", %{

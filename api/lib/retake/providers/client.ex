@@ -18,6 +18,8 @@ defmodule Retake.Providers.Client do
   A client is cheap; make one per video run.
   """
 
+  require Logger
+
   alias Retake.Cache
   alias Retake.Providers
   alias Retake.Providers.{Adapters, Config, Provider, Usage}
@@ -194,8 +196,9 @@ defmodule Retake.Providers.Client do
       call_adapter(client, provider, key, request, opts[:validate])
     end
 
-    with {:ok, output, %{provider: name, usage: usage}} <-
+    with {:ok, output, %{provider: name, usage: usage} = answered} <-
            Providers.run(client.config, client.profile, capability, call_adapter, run_opts),
+         :ok <- log_fallback(capability, name, answered),
          provider = Enum.find(providers, &(&1.name == name)),
          {:ok, entry} <-
            Cache.store(
@@ -210,19 +213,45 @@ defmodule Retake.Providers.Client do
     end
   end
 
+  # A provider that failed before another one answered is invisible to the caller, which only
+  # gets the answer: say it here. A provider skipped for want of a key is a choice, not a failure.
+  defp log_fallback(capability, name, %{failed: failed}) do
+    for %{provider: provider, reason: reason} <- failed, not match?({:missing_env, _}, reason) do
+      Logger.warning(
+        "#{capability}: provider #{provider} failed (#{inspect(reason)}); #{name} answered"
+      )
+    end
+
+    :ok
+  end
+
+  defp log_fallback(_capability, _name, _answered), do: :ok
+
   defp call_adapter(client, %Provider{} = provider, key, request, validate) do
     case Adapters.fetch(provider.adapter) do
       :error ->
         {:error, {:unknown_adapter, provider.adapter}}
 
       {:ok, adapter} ->
-        with {:ok, output, usage} <-
-               invoke(adapter, client, provider, key, effective(provider, request)),
-             :ok <- validate_output(validate, output) do
-          {:ok, output, usage}
-        end
+        serialized(provider, fn ->
+          with {:ok, output, usage} <-
+                 invoke(adapter, client, provider, key, effective(provider, request)),
+               :ok <- validate_output(validate, output) do
+            {:ok, output, usage}
+          end
+        end)
     end
   end
+
+  # `one_at_a_time = true` on a provider: its calls queue behind each other, across every video
+  # being made. For a service that slows down badly when called in parallel (FLUX.2 on Cloudflare
+  # took 92 s or timed out with three at once, against 14 s alone). The wait is not part of the
+  # call's own timeout.
+  defp serialized(%Provider{options: %{"one_at_a_time" => true}} = provider, fun) do
+    :global.trans({{:retake_provider, provider.name}, self()}, fun, [node()])
+  end
+
+  defp serialized(_provider, fun), do: fun.()
 
   # An adapter that needs the storage (to read an audio file) defines call/4.
   defp invoke(adapter, client, provider, key, request) do

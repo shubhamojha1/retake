@@ -4,7 +4,8 @@
 # the environment variable that holds its key (api_key_env).
 #
 # Concepts
-# - A capability is a job Retake needs done: llm, tts, stt, stock, music.
+# - A capability is a job Retake needs done: llm, tts, stt, stock, music, and optionally
+#   image (a profile without an image slot uses stock only).
 # - A provider is one way of doing it. Each provider uses an adapter (the code
 #   that speaks its API). Many services speak the OpenAI API, so one adapter
 #   covers them.
@@ -42,6 +43,7 @@ tts   = { use = "kokoro-local",  fallbacks = [] }
 stt   = { use = "groq-whisper",  fallbacks = ["whisper-local"] }
 stock = { use = "pexels",        fallbacks = ["pixabay"] }
 music = { use = "library",       fallbacks = [] }
+image = { use = "cloudflare-flux2", fallbacks = ["cloudflare-flux"] }  # generated images; with no Cloudflare keys set, stock is used
 
 [profiles.dev]
 # Fully offline. No keys, no quota. Lower quality, slower; good for coding.
@@ -155,6 +157,43 @@ attribution = true
 capability = "stock"
 adapter = "local_directory"        # picks files from a folder by keyword in filename
 path = "./fixtures/stock"
+
+# --- Generated images (optional) --------------------------------------------
+# Cloudflare Workers AI. Needs two environment variables: an API token with Workers AI
+# access (CLOUDFLARE_API_TOKEN) and your account id (CLOUDFLARE_ACCOUNT_ID).
+
+# FLUX.2 klein: a portrait picture (1080x1920, the video's own size, so nothing is upscaled).
+# Tried first. By Cloudflare's published per-tile prices one picture costs roughly 110 to 310
+# Neurons (it depends on how tiles are counted), so 30 to 90 a day on the free plan; the limit
+# below is the cautious end. Read your real usage in the Cloudflare dashboard and adjust. For
+# cheaper, softer pictures use width = 768 and height = 1344. When this runs out or fails,
+# the square FLUX.1 model below takes over.
+[providers.cloudflare-flux2]
+capability = "image"
+adapter = "cloudflare_workers_ai_image"
+api_key_env = "CLOUDFLARE_API_TOKEN"
+account_id_env = "CLOUDFLARE_ACCOUNT_ID"
+model = "@cf/black-forest-labs/flux-2-klein-4b"
+width = 1080
+height = 1920
+timeout_ms = 120000
+# Klein is slow when called in parallel: alone a picture took 14 s, three at once took 18 s,
+# 92 s and a timeout. Queued one after another it is faster and never times out.
+one_at_a_time = true
+rate_limit = { requests_per_day = 30 }
+
+# FLUX.1 schnell: always square (1024x1024), which the video crops at the sides.
+[providers.cloudflare-flux]
+capability = "image"
+adapter = "cloudflare_workers_ai_image"
+api_key_env = "CLOUDFLARE_API_TOKEN"
+account_id_env = "CLOUDFLARE_ACCOUNT_ID"
+model = "@cf/black-forest-labs/flux-1-schnell"
+steps = 4
+timeout_ms = 60000
+# The free plan allows 10,000 Neurons a day: about 170 images at 4 steps if the output
+# is 1024x1024 (check with `just image`). Stay under it.
+rate_limit = { requests_per_day = 150 }
 
 # --- Music ----------------------------------------------------------------
 

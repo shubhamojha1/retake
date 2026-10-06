@@ -2,7 +2,7 @@ defmodule Retake.Providers.Config do
   @moduledoc """
   Loads and validates `config/providers.toml` (see `config/providers.example.toml`).
 
-  Capabilities are jobs (llm, tts, stt, stock, music). A provider is one way of
+  Capabilities are jobs (llm, tts, stt, stock, music, and optionally image). A provider is one way of
   doing a job. A profile picks one provider per capability, plus fallbacks.
   Errors are `%{path, message}` with the TOML path of the problem, and every
   problem is reported, not just the first.
@@ -11,7 +11,13 @@ defmodule Retake.Providers.Config do
   alias Retake.Providers.Provider
 
   @capability_list [llm: "llm", tts: "tts", stt: "stt", stock: "stock", music: "music"]
-  @provider_capabilities Map.new(@capability_list, fn {atom, name} -> {name, atom} end)
+  # Not every profile needs these: without a slot the pipeline does without (no `image` slot
+  # means stock only).
+  @optional_capability_list [image: "image"]
+  @provider_capabilities Map.new(
+                           @capability_list ++ @optional_capability_list,
+                           fn {atom, name} -> {name, atom} end
+                         )
                          |> Map.put("any", :any)
   @rate_windows %{
     "requests_per_minute" => :requests_per_minute,
@@ -238,13 +244,19 @@ defmodule Retake.Providers.Config do
   defp parse_profile(name, slots, providers) do
     slots = if is_map(slots), do: slots, else: %{}
 
-    Enum.reduce(@capability_list, {%{}, []}, fn {capability, capability_name},
-                                                {profile, errors} ->
+    Enum.reduce(@capability_list ++ @optional_capability_list, {%{}, []}, fn {capability,
+                                                                              capability_name},
+                                                                             {profile, errors} ->
       path = "profiles.#{name}.#{capability_name}"
+      raw = Map.get(slots, capability_name)
 
-      case parse_slot(Map.get(slots, capability_name), capability, path, providers) do
-        {:ok, slot} -> {Map.put(profile, capability, slot), errors}
-        {:error, new_errors} -> {profile, errors ++ new_errors}
+      if is_nil(raw) and Keyword.has_key?(@optional_capability_list, capability) do
+        {profile, errors}
+      else
+        case parse_slot(raw, capability, path, providers) do
+          {:ok, slot} -> {Map.put(profile, capability, slot), errors}
+          {:error, new_errors} -> {profile, errors ++ new_errors}
+        end
       end
     end)
   end

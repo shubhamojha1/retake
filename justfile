@@ -131,6 +131,11 @@ kokoro-stop:
 stock *args:
     cd api && mix retake.stock {{args}}
 
+# Make an image for a prompt with the real image provider: `just image "a calm sea at sunrise, vertical shot"`.
+# Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see `mix help retake.image`).
+image *args:
+    cd api && mix retake.image {{args}}
+
 # Render a spec to .retake/out/<id>.mp4 (release build: debug is far too slow for video).
 render spec:
     cargo run -q --release -p retake_render -- {{spec}}

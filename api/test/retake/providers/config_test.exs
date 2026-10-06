@@ -86,6 +86,38 @@ defmodule Retake.Providers.ConfigTest do
       {:ok, config} = Config.load(@example)
       assert config.budget == %{max_cost_per_video_usd: 0.5, max_cost_per_day_usd: 2.0}
     end
+
+    test "the free profile makes images with Cloudflare; dev and test have no image slot" do
+      {:ok, config} = Config.load(@example)
+
+      # portrait pictures first; the square FLUX.1 model is the fallback
+      assert config.profiles["free"].image == %{
+               use: "cloudflare-flux2",
+               fallbacks: ["cloudflare-flux"]
+             }
+
+      flux2 = config.providers["cloudflare-flux2"]
+      assert flux2.capability == :image
+      assert flux2.adapter == "cloudflare_workers_ai_image"
+      assert flux2.options["model"] == "@cf/black-forest-labs/flux-2-klein-4b"
+      assert flux2.options["width"] == 1080
+      assert flux2.options["height"] == 1920
+      assert flux2.rate_limit == %{requests_per_day: 30}
+      # klein queues parallel calls and times out; one at a time is faster (measured)
+      assert flux2.options["one_at_a_time"] == true
+      assert flux2.options["timeout_ms"] == 120_000
+
+      refute Map.has_key?(config.profiles["dev"], :image)
+      refute Map.has_key?(config.profiles["test"], :image)
+
+      flux = config.providers["cloudflare-flux"]
+      assert flux.capability == :image
+      assert flux.adapter == "cloudflare_workers_ai_image"
+      assert flux.api_key_env == "CLOUDFLARE_API_TOKEN"
+      assert flux.options["account_id_env"] == "CLOUDFLARE_ACCOUNT_ID"
+      assert flux.options["model"] == "@cf/black-forest-labs/flux-1-schnell"
+      assert flux.rate_limit == %{requests_per_day: 150}
+    end
   end
 
   describe "load/1 and parse/1" do
@@ -121,6 +153,41 @@ defmodule Retake.Providers.ConfigTest do
         Config.parse(String.replace(@minimal, ~s(music = { use = "m", fallbacks = [] }\n), ""))
 
       assert_error(result, "profiles.dev.music", "missing")
+    end
+
+    test "the image capability is optional in a profile" do
+      assert {:ok, config} = Config.parse(@minimal)
+      refute Map.has_key?(config.profiles["dev"], :image)
+    end
+
+    test "a profile may use an image provider" do
+      toml =
+        @minimal
+        |> String.replace(
+          ~s(music = { use = "m", fallbacks = [] }\n),
+          ~s(music = { use = "m", fallbacks = [] }\nimage = { use = "i", fallbacks = [] }\n)
+        )
+        |> Kernel.<>("""
+
+        [providers.i]
+        capability = "image"
+        adapter = "cloudflare_workers_ai_image"
+        """)
+
+      assert {:ok, config} = Config.parse(toml)
+      assert config.profiles["dev"].image == %{use: "i", fallbacks: []}
+      assert config.providers["i"].capability == :image
+    end
+
+    test "an image slot must name an image provider" do
+      toml =
+        String.replace(
+          @minimal,
+          ~s(music = { use = "m", fallbacks = [] }\n),
+          ~s(music = { use = "m", fallbacks = [] }\nimage = { use = "k", fallbacks = [] }\n)
+        )
+
+      assert_error(Config.parse(toml), "profiles.dev.image.use", "stock")
     end
 
     test "a profile cannot use an unknown provider" do

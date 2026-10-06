@@ -42,6 +42,9 @@ config :retake,
     ],
     Retake.Providers.Adapters.OpenAICompatibleTranscription => [
       plug: {Req.Test, Retake.Providers.Adapters.OpenAICompatibleTranscription}
+    ],
+    Retake.Providers.Adapters.CloudflareWorkersAIImage => [
+      plug: {Req.Test, Retake.Providers.Adapters.CloudflareWorkersAIImage}
     ]
   }
 

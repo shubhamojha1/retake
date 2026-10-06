@@ -13,7 +13,8 @@ defmodule Retake.Providers.Adapters do
     "openai_compatible_speech" => Retake.Providers.Adapters.OpenAICompatibleSpeech,
     "openai_compatible_transcription" => Retake.Providers.Adapters.OpenAICompatibleTranscription,
     "pexels" => Retake.Providers.Adapters.Pexels,
-    "pixabay" => Retake.Providers.Adapters.Pixabay
+    "pixabay" => Retake.Providers.Adapters.Pixabay,
+    "cloudflare_workers_ai_image" => Retake.Providers.Adapters.CloudflareWorkersAIImage
   }
 
   @spec fetch(String.t()) :: {:ok, module()} | :error

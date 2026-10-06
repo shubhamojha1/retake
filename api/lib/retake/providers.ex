@@ -14,19 +14,33 @@ defmodule Retake.Providers do
 
   alias Retake.Providers.{Config, Provider, Usage}
 
-  @capabilities [:llm, :tts, :stt, :stock, :music]
+  @capabilities [:llm, :tts, :stt, :stock, :music, :image]
 
   @type attempt :: %{provider: String.t(), reason: term()}
 
-  @doc "The providers for `capability` in `profile`: the primary first, then the fallbacks."
+  @doc """
+  The providers for `capability` in `profile`: the primary first, then the fallbacks. Every
+  profile covers every capability except `:image`; a profile with no `image` slot has no
+  image provider (`{:capability_not_configured, :image}`).
+  """
   @spec resolve(Config.t(), String.t(), atom()) ::
           {:ok, [Provider.t()]}
-          | {:error, {:unknown_profile, String.t()} | {:unknown_capability, atom()}}
+          | {:error,
+             {:unknown_profile, String.t()}
+             | {:unknown_capability, atom()}
+             | {:capability_not_configured, atom()}}
   def resolve(%Config{} = config, profile, capability) do
     with {:ok, slots} <- fetch(config.profiles, profile, :unknown_profile),
-         true <- capability in @capabilities || {:error, {:unknown_capability, capability}} do
-      slot = Map.fetch!(slots, capability)
+         true <- capability in @capabilities || {:error, {:unknown_capability, capability}},
+         {:ok, slot} <- slot(slots, capability) do
       {:ok, Enum.map([slot.use | slot.fallbacks], &Map.fetch!(config.providers, &1))}
+    end
+  end
+
+  defp slot(slots, capability) do
+    case Map.fetch(slots, capability) do
+      {:ok, slot} -> {:ok, slot}
+      :error -> {:error, {:capability_not_configured, capability}}
     end
   end
 
@@ -43,7 +57,12 @@ defmodule Retake.Providers do
     * `:now` - time in milliseconds (default: now)
   """
   @spec run(Config.t(), String.t(), atom(), (Provider.t(), String.t() | nil -> term()), keyword()) ::
-          {:ok, term(), %{provider: String.t(), usage: map()}}
+          {:ok, term(),
+           %{
+             optional(:failed) => [attempt()],
+             provider: String.t(),
+             usage: map()
+           }}
           | {:error, {:budget_exceeded, :video | :day}}
           | {:error, {:all_providers_failed, [attempt()]}}
           | {:error, {:unknown_profile, String.t()} | {:unknown_capability, atom()}}
@@ -79,11 +98,19 @@ defmodule Retake.Providers do
       :ok =
         Usage.charge(context.usage, context.video_id, Map.get(usage, :cost_usd, 0.0), context.now)
 
-      {:ok, result, %{provider: provider.name, usage: usage}}
+      {:ok, result, answered(provider, usage, attempts)}
     else
       {:error, reason} -> next(rest, fun, context, attempts, provider, reason)
       other -> next(rest, fun, context, attempts, provider, {:invalid_adapter_result, other})
     end
+  end
+
+  # `failed`: the providers tried before this one, and why they did not answer. Only present when
+  # there were any, because a caller only sees the answer and a fallback would be invisible.
+  defp answered(provider, usage, []), do: %{provider: provider.name, usage: usage}
+
+  defp answered(provider, usage, attempts) do
+    %{provider: provider.name, usage: usage, failed: Enum.reverse(attempts)}
   end
 
   defp next(rest, fun, context, attempts, provider, reason) do

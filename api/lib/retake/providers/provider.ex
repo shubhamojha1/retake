@@ -10,7 +10,7 @@ defmodule Retake.Providers.Provider do
   @enforce_keys [:name, :capability, :adapter]
   defstruct [:name, :capability, :adapter, api_key_env: nil, rate_limit: %{}, options: %{}]
 
-  @type capability :: :llm | :tts | :stt | :stock | :music | :any
+  @type capability :: :llm | :tts | :stt | :stock | :music | :image | :any
 
   @type t :: %__MODULE__{
           name: String.t(),
